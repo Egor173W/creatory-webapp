@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BotFactory — Премиум фабрика ботов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0b0d10;--bg2:#12151b;--card:rgba(255,255,255,0.045);--card-border:rgba(255,255,255,0.07);--gold:#e8c15a;--gold-soft:rgba(232,193,90,0.14);--gold-border:rgba(232,193,90,0.35);--gold-grad:linear-gradient(135deg,#f6dd8f 0%,#d9b44e 48%,#a8842c 100%);--text:#f2f3f5;--muted:#8b909a;--danger:#e5606c;--ok:#5fd39a;--r-lg:22px;--r-md:16px;--tabbar-h:76px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;overscroll-behavior:none}
+#app{max-width:520px;margin:0 auto;min-height:100vh;position:relative}
+.hidden{display:none!important}
+.mono{font-family:"SF Mono","Cascadia Mono",Consolas,monospace;font-size:13px}
+.glass{background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-lg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.card{padding:20px}
+.view.gate{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:32px 20px calc(32px + env(safe-area-inset-bottom))}
+.gate-logo{text-align:center}
+.logo-orb{width:84px;height:84px;margin:0 auto 16px;border-radius:28px;background:var(--gold-grad);color:#14100a;font-size:42px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(232,193,90,0.25)}
+.gate-title{font-size:30px;font-weight:800;letter-spacing:0.5px}
+.gate-sub{color:var(--muted);margin-top:6px;font-size:14px}
+.rules-head{font-weight:700;font-size:16px;margin-bottom:12px}
+.rules-list{list-style:none;display:grid;gap:10px}
+.rules-list li{padding-left:22px;position:relative;color:#c7cad1;font-size:13.5px}
+.rules-list li::before{content:"";position:absolute;left:4px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.btn{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;border-radius:var(--r-md);padding:14px 22px;transition:transform 0.12s ease,opacity 0.12s ease,box-shadow 0.12s ease}
+.btn:active{transform:scale(0.97);opacity:0.9}
+.btn[disabled]{opacity:0.45;pointer-events:none}
+.btn-gold{background:var(--gold-grad);color:#171207;box-shadow:0 8px 28px rgba(217,180,78,0.28)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--card-border)}
+.btn-danger{background:rgba(229,96,108,0.12);color:var(--danger);border:1px solid rgba(229,96,108,0.3)}
+.btn-sm{padding:9px 14px;font-size:13px;border-radius:12px}
+.btn-lg{width:100%;padding:17px;font-size:16px}
+.btn-ok{background:rgba(95,211,154,0.12);color:var(--ok);border:1px solid rgba(95,211,154,0.3)}
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;background:linear-gradient(to bottom,var(--bg) 65%,transparent)}
+.topbar-brand{font-weight:800;font-size:19px;letter-spacing:0.4px}
+.balance-chip{display:flex;align-items:center;gap:8px;background:var(--gold-soft);border:1px solid var(--gold-border);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px}
+.balance-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.content{padding:4px 20px calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom))}
+.view{animation:fadeIn 0.25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.section-row{display:flex;align-items:center;justify-content:space-between;margin:26px 0 14px}
+.section-title{font-size:17px;font-weight:800}
+.hero{position:relative;overflow:hidden;border-radius:26px;padding:30px 24px 26px;text-align:center;background:radial-gradient(120% 140% at 50% -20%,rgba(232,193,90,0.16) 0%,transparent 55%),linear-gradient(160deg,#161a21 0%,#10131a 100%);border:1px solid var(--gold-border);box-shadow:0 18px 60px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.06)}
+.hero-glow{position:absolute;top:-70px;left:50%;transform:translateX(-50%);width:260px;height:160px;background:radial-gradient(closest-side,rgba(232,193,90,0.28),transparent);filter:blur(30px);pointer-events:none}
+.hero-icon{font-size:46px;line-height:1;filter:drop-shadow(0 6px 18px rgba(232,193,90,0.35))}
+.hero-name{margin-top:12px;font-size:24px;font-weight:800;letter-spacing:0.4px;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-desc{color:var(--muted);font-size:13.5px;margin:10px auto 18px;max-width:320px}
+.hero-badge{display:inline-block;background:rgba(95,211,154,0.13);color:var(--ok);border:1px solid rgba(95,211,154,0.3);border-radius:999px;padding:4px 12px;font-size:11px;font-weight:700;margin-top:8px}
+.hero-btn{min-width:200px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.stat-card{padding:18px}
+.stat-value{font-size:22px;font-weight:800}
+.stat-label{color:var(--muted);font-size:12.5px;margin-top:4px}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.quick-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 13px;cursor:pointer;transition:transform 0.12s ease,border-color 0.12s ease;font-family:inherit;color:var(--text)}
+.quick-card:active{transform:scale(0.95);border-color:var(--gold-border)}
+.quick-icon{font-size:22px}
+.quick-label{font-size:11px;color:var(--muted);font-weight:600}
+.bots-list{display:grid;gap:12px}
+.bot-card{padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform 0.12s ease,border-color 0.12s ease}
+.bot-card:active{transform:scale(0.98);border-color:var(--gold-border)}
+.bot-avatar{width:46px;height:46px;flex-shrink:0;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg2);border:1px solid var(--card-border)}
+.bot-info{flex:1;min-width:0}
+.bot-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bot-meta{color:var(--muted);font-size:12.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-on{background:rgba(95,211,154,0.13);color:var(--ok)}
+.badge-off{background:rgba(139,144,154,0.13);color:var(--muted)}
+.badge-gold{background:var(--gold-soft);color:var(--gold)}
+.badge-free{background:rgba(95,211,154,0.13);color:var(--ok)}
+.empty-note{color:var(--muted);text-align:center;padding:34px 0;font-size:14px}
+.wizard-progress{height:4px;border-radius:999px;background:rgba(255,255,255,0.07);overflow:hidden;margin-bottom:10px}
+.wizard-bar{height:100%;width:25%;background:var(--gold-grad);border-radius:999px;transition:width 0.3s ease}
+.wizard-step-label{color:var(--muted);font-size:12.5px;font-weight:600;margin-bottom:18px}
+.wiz-pane{animation:fadeIn 0.22s ease}
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.type-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 6px;cursor:pointer;font-family:inherit;color:var(--text);font-size:12.5px;font-weight:600;transition:transform 0.12s ease,border-color 0.12s ease,background 0.12s ease}
+.type-card:active{transform:scale(0.95)}
+.type-card.selected{border-color:var(--gold);background:var(--gold-soft)}
+.type-card.priority{border-color:var(--gold-border)}
+.type-icon{font-size:26px}
+.type-free{font-size:10px;color:var(--ok);font-weight:700}
+.field-label{display:block;color:var(--muted);font-size:12.5px;font-weight:600;margin:16px 0 8px}
+.field{width:100%;background:var(--bg2);border:1px solid var(--card-border);border-radius:var(--r-md);color:var(--text);font-family:inherit;font-size:15px;padding:14px 16px;outline:none;transition:border-color 0.15s ease}
+.field:focus{border-color:var(--gold-border)}
+.field-area{min-height:130px;resize:vertical}
+.hint{color:var(--muted);font-size:12px;margin-top:10px}
+.gen-status{color:var(--muted);font-size:14px;padding:8px 0}
+.blueprint{padding:16px;margin-top:12px;font-size:13.5px;color:#c7cad1;white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto}
+.wiz-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.done-wrap{text-align:center;padding:26px 0 8px}
+.done-icon{font-size:52px}
+.done-title{font-size:20px;font-weight:800;margin-top:12px}
+.done-link{margin-top:12px;color:var(--gold);word-break:break-all}
+.earn-info{padding:18px;display:grid;gap:10px}
+.earn-line{font-size:13.5px;color:#c7cad1}
+.earn-note{font-size:12px;color:var(--muted);border-top:1px solid var(--card-border);padding-top:10px}
+.earn-action{margin-top:10px}
+.profile-card{padding:22px;display:flex;align-items:center;gap:18px}
+.profile-avatar{width:62px;height:62px;flex-shrink:0;border-radius:22px;background:var(--gold-grad);color:#14100a;font-size:28px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.profile-rows{flex:1;display:grid;gap:8px}
+.prow{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.prow b{color:var(--text);font-weight:700}
+.profile-about{margin-top:14px;padding:20px}
+.about-text{color:#c7cad1;font-size:13.5px}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));padding:0 8px env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;background:rgba(13,15,19,0.82);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-top:1px solid var(--card-border);z-index:50}
+.tab{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-family:inherit;font-size:10.5px;font-weight:600;padding:8px 0;transition:color 0.15s ease}
+.tab.active{color:var(--gold)}
+.tab-icon{font-size:19px;line-height:1}
+.tab-center-inner{width:54px;height:54px;margin-top:-26px;border-radius:20px;background:var(--gold-grad);display:flex;align-items:center;justify-content:center;font-size:25px;box-shadow:0 10px 30px rgba(217,180,78,0.4),inset 0 1px 0 rgba(255,255,255,0.35);transition:transform 0.12s ease}
+.tab-center:active .tab-center-inner{transform:scale(0.92)}
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:60;animation:fadeIn 0.2s ease}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;max-height:82vh;overflow-y:auto;background:var(--bg2);border-radius:26px 26px 0 0;border:1px solid var(--card-border);border-bottom:none;padding:12px 20px calc(26px + env(safe-area-inset-bottom));z-index:61;animation:slideUp 0.28s cubic-bezier(0.2,0.9,0.3,1)}
+@keyframes slideUp{from{transform:translate(-50%,60px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.sheet-handle{width:44px;height:4px;border-radius:999px;background:rgba(255,255,255,0.16);margin:4px auto 18px}
+.sheet-title{font-size:19px;font-weight:800;margin-bottom:4px}
+.sheet-sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.sheet-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.sheet-stat{background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-md);padding:12px;text-align:center}
+.sheet-stat b{display:block;font-size:16px}
+.sheet-stat span{font-size:11px;color:var(--muted)}
+.sheet-actions{display:grid;gap:10px;margin-top:18px}
+.int-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border);font-size:14px}
+.int-row:last-child{border-bottom:none}
+.toggle{position:relative;width:48px;height:28px;flex-shrink:0;border-radius:999px;background:rgba(255,255,255,0.1);border:1px solid var(--card-border);cursor:pointer;transition:background 0.18s ease}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform 0.18s ease}
+.toggle.on{background:var(--gold-grad);border-color:transparent}
+.toggle.on::after{transform:translateX(20px)}
+.toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1c2027;border:1px solid var(--card-border);color:var(--text);padding:12px 20px;border-radius:14px;font-size:13.5px;font-weight:600;z-index:80;max-width:86%;text-align:center;animation:fadeIn 0.2s ease}
+.loader-overlay{position:fixed;inset:0;background:rgba(11,13,16,0.6);display:flex;align-items:center;justify-content:center;z-index:90}
+.spinner{width:42px;height:42px;border-radius:50%;border:3px solid rgba(232,193,90,0.2);border-top-color:var(--gold);animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.confirm-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:95;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.15s ease}
+.confirm-box{background:var(--bg2);border:1px solid var(--card-border);border-radius:var(--r-lg);padding:24px;max-width:320px;width:90%;text-align:center}
+.confirm-text{font-size:15px;font-weight:700;margin-bottom:18px;line-height:1.5}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pull-indicator{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:35;background:var(--bg2);border:1px solid var(--card-border);border-radius:999px;padding:8px 18px;font-size:12px;font-weight:600;color:var(--muted);animation:fadeIn 0.2s ease}
+.pull-indicator .spin{display:inline-block;animation:spin 0.8s linear infinite;margin-right:6px}
+.bal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.bal-card{padding:14px;text-align:center}
+.bal-card.full{grid-column:1/-1}
+.bal-value{font-size:18px;font-weight:800}
+.bal-label{color:var(--muted);font-size:11px;margin-top:4px}
+.bal-card.gold{border-color:var(--gold-border);background:var(--gold-soft)}
+.bal-card.gold .bal-value{color:var(--gold)}
+.tx-item{padding:12px 0;border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.tx-item:last-child{border-bottom:none}
+.tx-desc{color:#c7cad1;flex:1}
+.tx-amount{font-weight:700;white-space:nowrap;margin-left:8px}
+.tx-amount.pos{color:var(--ok)}
+.tx-amount.neg{color:var(--danger)}
+.tx-date{color:var(--muted);font-size:11px;margin-top:2px}
+.ref-link-box{background:var(--bg2);border:1px solid var(--card-border);border-radius:var(--r-md);padding:12px 14px;margin-top:12px;display:flex;align-items:center;gap:10px}
+.ref-link{flex:1;font-size:12px;color:var(--gold);word-break:break-all;font-family:monospace}
+.ref-copy{background:var(--gold-grad);color:#171207;border:none;border-radius:10px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.nav-pill{display:inline-flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.nav-pill button{background:var(--bg2);border:1px solid var(--card-border);border-radius:999px;padding:8px 16px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit}
+.nav-pill button.active{background:var(--gold-soft);border-color:var(--gold-border);color:var(--gold)}
+@media(max-width:375px){.hero{padding:22px 16px 20px}.hero-icon{font-size:38px}.hero-name{font-size:20px}.stat-grid{gap:8px}.stat-card{padding:14px}.stat-value{font-size:19px}.quick-grid{gap:6px}.quick-card{padding:12px 4px 10px}.type-grid{gap:8px}.type-card{padding:14px 4px;font-size:11.5px}.content{padding:4px 16px calc(var(--tabbar-h) + 20px + env(safe-area-inset-bottom))}.field{padding:12px 14px;font-size:14px}.sheet{padding:10px 16px calc(20px + env(safe-area-inset-bottom))}.sheet-stats{gap:8px}.sheet-stat{padding:10px}.sheet-stat b{font-size:14px}.tab-center-inner{width:48px;height:48px;margin-top:-24px;font-size:22px;border-radius:18px}.btn-lg{padding:15px;font-size:15px}.confirm-box{padding:20px;max-width:280px}.confirm-text{font-size:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="view-gate" class="view gate hidden">
+    <div class="gate-logo">
+      <div class="logo-orb">C</div>
+      <div class="gate-title">BotFactory</div>
+      <div class="gate-sub">Премиум фабрика Telegram-ботов</div>
+    </div>
+    <div class="glass card gate-rules">
+      <div class="rules-head">Условия использования</div>
+      <ul class="rules-list">
+        <li>Создавайте ботов бесплатно — хостинг и ИИ включены</li>
+        <li>ИИ-Креатор: опишите идею — получите готового бота, сайт, игру или миниапп</li>
+        <li>Доп. заработок подключается автоматически через ОП</li>
+        <li>Запрещены проекты, нарушающие правила Telegram</li>
+      </ul>
+    </div>
+    <button class="btn btn-gold btn-lg" id="btnAcceptRules">Принять и продолжить</button>
+  </section>
+
+  <div id="shell" class="hidden">
+    <header class="topbar">
+      <div class="topbar-brand">BotFactory</div>
+      <div class="balance-chip" id="balanceChip">
+        <span class="balance-dot"></span>
+        <span id="balanceValue">0 ₽</span>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <section id="view-home" class="view">
+        <div class="hero" id="heroAi">
+          <div class="hero-glow"></div>
+          <div class="hero-icon">🧠</div>
+          <div class="hero-name">ИИ-Креатор</div>
+          <div class="hero-desc">Опишите идею — ИИ спроектирует и соберёт проект за минуты</div>
+          <div class="hero-badge">✅ Полностью бесплатно: хостинг, ИИ, ОП</div>
+          <button class="btn btn-gold hero-btn" id="btnHeroCreate" style="margin-top:16px">Создать проект</button>
+        </div>
+
+        <div class="stat-grid">
+          <div class="glass stat-card">
+            <div class="stat-value" id="statBots">0</div>
+            <div class="stat-label">Мои боты</div>
+          </div>
+          <div class="glass stat-card">
+            <div class="stat-value" id="statEarned">0 ₽</div>
+            <div class="stat-label">Общий доход</div>
+          </div>
+        </div>
+
+        <div class="section-row"><div class="section-title">Быстрые действия</div></div>
+        <div class="quick-grid">
+          <button class="glass quick-card" data-nav="bots"><span class="quick-icon">🤖</span><span class="quick-label">Мои боты</span></button>
+          <button class="glass quick-card" data-nav="earn"><span class="quick-icon">💰</span><span class="quick-label">Финансы</span></button>
+          <button class="glass quick-card" data-nav="ai"><span class="quick-icon">✨</span><span class="quick-label">Новый проект</span></button>
+          <button class="glass quick-card" data-nav="profile"><span class="quick-icon">👤</span><span class="quick-label">Профиль</span></button>
+        </div>
+      </section>
+
+      <section id="view-bots" class="view">
+        <div class="section-row">
+          <div class="section-title">Мои боты</div>
+          <button class="btn btn-ghost btn-sm" data-nav="ai">+ Новый</button>
+        </div>
+        <div id="botsList" class="bots-list"></div>
+      </section>
+
+      <section id="view-ai" class="view">
+        <div class="wizard" id="wizard">
+          <div class="wizard-progress"><div class="wizard-bar" id="wizBar"></div></div>
+          <div class="wizard-step-label" id="wizLabel">Шаг 1 из 4 · Тип проекта</div>
+
+          <div class="wiz-pane" data-step="1">
+            <div class="glass card" style="margin-bottom:16px;padding:14px 16px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px">💰 Создание проектов полностью бесплатно</div>
+              <div style="font-size:12.5px;color:var(--muted)">Хостинг, ИИ-генерация, ОП-канал — всё включено. Без скрытых платежей.</div>
+            </div>
+            <div class="type-grid" id="typeGrid"></div>
+          </div>
+
+          <div class="wiz-pane hidden" data-step="2">
+            <label class="field-label">Название проекта</label>
+            <input class="field" id="wizTitle" placeholder="Например: InvestPro Bot" maxlength="64">
+            <label class="field-label">Техническое задание</label>
+            <textarea class="field field-area" id="wizTz" placeholder="Опишите что должен делать проект: функции, логика, интеграции..."></textarea>
+          </div>
+
+          <div class="wiz-pane hidden" data-step="3">
+            <div id="wizGenStatus" class="gen-status">Готово к генерации</div>
+            <div id="wizBlueprint" class="blueprint glass hidden"></div>
+          </div>
+
+          <div class="wiz-pane hidden" data-step="4">
+            <div id="wizRegWrap">
+              <label class="field-label">Токен бота от @BotFather</label>
+              <input class="field mono" id="wizToken" placeholder="123456789:AA...">
+              <div class="hint">Для site/game/miniapp/script токен не нужен</div>
+            </div>
+            <div id="wizDone" class="hidden done-wrap">
+              <div class="done-icon">✅</div>
+              <div class="done-title" id="doneTitle">Проект создан!</div>
+              <div class="done-link mono" id="doneLink"></div>
+            </div>
+          </div>
+
+          <div class="wiz-actions">
+            <button class="btn btn-ghost" id="wizBack">Назад</button>
+            <button class="btn btn-gold" id="wizNext">Далее</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-earn" class="view">
+        <div class="section-row"><div class="section-title">Финансы</div></div>
+
+        <div class="nav-pill" id="earnTabs">
+          <button class="active" data-etab="balance">Баланс</button>
+          <button data-etab="ops">Операции</button>
+          <button data-etab="tx">История</button>
+          <button data-etab="ref">Рефералы</button>
+        </div>
+
+        <div id="earnTabBalance">
+          <div class="bal-grid" id="balGrid"></div>
+        </div>
+
+        <div id="earnTabOps" class="hidden">
+          <div class="glass card" style="padding:14px 16px">
+            <div class="section-title" style="font-size:15px;margin-bottom:12px">Пополнить</div>
+            <input class="field" id="depAmount" type="number" placeholder="Сумма (мин. 10 ₽)" min="10" max="100000">
+            <button class="btn btn-gold btn-lg" id="btnDeposit" style="margin-top:12px">Пополнить через CryptoBot</button>
+            <div class="hint" id="depBonusHint"></div>
+          </div>
+          <div class="glass card" style="padding:14px 16px;margin-top:12px">
+            <div class="section-title" style="font-size:15px;margin-bottom:12px">Вывести</div>
+            <input class="field" id="wdAmount" type="number" placeholder="Сумма (мин. 50 ₽)" min="50">
+            <input class="field" id="wdDetails" placeholder="Реквизиты (карта / USDT TRC20)" style="margin-top:8px">
+            <button class="btn btn-danger btn-lg" id="btnWithdraw" style="margin-top:12px">Запросить вывод</button>
+          </div>
+          <div class="glass card" style="padding:14px 16px;margin-top:12px">
+            <div class="section-title" style="font-size:15px;margin-bottom:12px">Конвертировать</div>
+            <div class="hint" id="convRefHint"></div>
+            <input class="field" id="convAmount" type="number" placeholder="Сумма" min="1">
+            <button class="btn btn-ok btn-lg" id="btnConvert" style="margin-top:12px">Реферальный → Основной</button>
+          </div>
+        </div>
+
+        <div id="earnTabTx" class="hidden">
+          <div id="txList"></div>
+          <div id="txPaging" style="text-align:center;margin-top:12px"></div>
+        </div>
+
+        <div id="earnTabRef" class="hidden">
+          <div class="glass card" style="padding:14px 16px">
+            <div class="section-title" style="font-size:15px;margin-bottom:4px">Реферальная программа</div>
+            <div class="hint">Приглашайте друзей и получайте бонусы с их пополнений</div>
+            <div class="ref-link-box">
+              <span class="ref-link" id="refLink">—</span>
+              <button class="ref-copy" id="btnRefCopy">Копировать</button>
+            </div>
+          </div>
+          <div class="bal-grid" style="margin-top:12px" id="refStats"></div>
+        </div>
+      </section>
+
+      <section id="view-profile" class="view">
+        <div class="section-row"><div class="section-title">Профиль</div></div>
+        <div class="glass profile-card">
+          <div class="profile-avatar" id="profAvatar">C</div>
+          <div class="profile-rows">
+            <div class="prow"><span>ID</span><b class="mono" id="profId">—</b></div>
+            <div class="prow"><span>Баланс</span><b id="profBalance">—</b></div>
+            <div class="prow"><span>Доход</span><b id="profEarned">—</b></div>
+            <div class="prow"><span>Ботов</span><b id="profBots">—</b></div>
+          </div>
+        </div>
+        <div class="section-row"><div class="section-title" style="font-size:15px">Все балансы</div></div>
+        <div class="bal-grid" id="profBalGrid"></div>
+
+        <div class="section-row"><div class="section-title" style="font-size:15px">Поддержка</div></div>
+        <div class="glass card" style="padding:14px 16px" id="supportSection"></div>
+
+        <div class="section-row"><div class="section-title" style="font-size:15px">О платформе</div></div>
+        <div class="glass profile-about">
+          <div class="about-text">BotFactory — фабрика Telegram-проектов: готовые шаблоны бизнес-ботов и ИИ-Креатор для уникальных проектов. Хостинг, мониторинг и доп. заработок — в одном месте.</div>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="tabbar">
+      <button class="tab active" data-nav="home"><span class="tab-icon">⌂</span><span>Главная</span></button>
+      <button class="tab" data-nav="bots"><span class="tab-icon">🤖</span><span>Боты</span></button>
+      <button class="tab tab-center" data-nav="ai"><span class="tab-center-inner">🧠</span></button>
+      <button class="tab" data-nav="earn"><span class="tab-icon">💰</span><span>Финансы</span></button>
+      <button class="tab" data-nav="profile"><span class="tab-icon">👤</span><span>Профиль</span></button>
+    </nav>
+  </div>
+
+  <div class="sheet-backdrop hidden" id="sheetBackdrop"></div>
+  <div class="sheet hidden" id="botSheet">
+    <div class="sheet-handle"></div>
+    <div id="sheetBody"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="loader" class="loader-overlay hidden"><div class="spinner"></div></div>
+</div>
+<script>window.WORKER_URL = "https://creatorbot-test.vana30421.workers.dev/";</script>
+<script>
+(() => {
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  const $ = (id) => document.getElementById(id);
+  const NON_BOT_TYPES = ["site","game","miniapp","script"];
+
+  const state = { user: null, bots: [], balances: null, templates: [], wiz: { step: 1, type: null, title: "", tz: "", blueprint: null, registered: null }, currentBot: null, txPage: 1, pullStartY: 0, pulling: false };
+
+  function haptic(k) { try { if (!tg) return; if (k === "ok") tg.HapticFeedback.notificationOccurred("success"); else if (k === "err") tg.HapticFeedback.notificationOccurred("error"); else tg.HapticFeedback.impactOccurred("light"); } catch(e) {} }
+  let toastTimer = null;
+  function toast(t, ms = 2600) { const el = $("toast"); el.textContent = t; el.classList.remove("hidden"); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.add("hidden"), ms); }
+  function loader(on) { $("loader").classList.toggle("hidden", !on); }
+
+  async function api(action, payload = {}) {
+    const initData = tg ? tg.initData : "";
+    for (let a = 0; a <= 1; a++) {
+      try {
+        const ctrl = new AbortController();
+        const tm = setTimeout(() => ctrl.abort(), 10000);
+        const r = await fetch(window.WORKER_URL.replace(/\/+$/, "") + "/webapp_api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ initData, action, ...payload }), signal: ctrl.signal });
+        clearTimeout(tm);
+        if (!r.ok) { if (a < 1) { await new Promise(x => setTimeout(x, 800)); continue; } return { ok: false, error: "HTTP_" + r.status }; }
+        return await r.json();
+      } catch(e) { if (a < 1) { await new Promise(x => setTimeout(x, 800)); continue; } toast("Сеть недоступна"); return { ok: false, error: "NETWORK" }; }
+    }
+  }
+
+  const fmtMoney = (n) => (Number(n) || 0).toFixed(2).replace(/\.00$/, "") + " ₽";
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const fmtDate = (ts) => { if (!ts) return "—"; const d = new Date(ts); return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }); };
+
+  function nav(view) {
+    document.querySelectorAll(".content .view").forEach(v => v.classList.add("hidden"));
+    const t = $("view-" + view);
+    if (t) t.classList.remove("hidden");
+    document.querySelectorAll(".tabbar .tab").forEach(t2 => t2.classList.toggle("active", t2.dataset.nav === view));
+    window.scrollTo({ top: 0 });
+    if (view === "bots") loadBots();
+    if (view === "earn") loadEarnTab("balance");
+    if (view === "home") refreshHome();
+    if (view === "profile") loadProfile();
+  }
+
+  document.addEventListener("click", (e) => { const n = e.target.closest("[data-nav]"); if (n) { haptic(); nav(n.dataset.nav); } });
+
+  function showConfirm(text, fn) {
+    const bd = document.createElement("div");
+    bd.className = "confirm-backdrop";
+    bd.innerHTML = '<div class="confirm-box"><div class="confirm-text">' + esc(text) + '</div><div class="confirm-actions"><button class="btn btn-ghost" id="_cc">Отмена</button><button class="btn btn-danger" id="_co">Удалить</button></div></div>';
+    document.body.appendChild(bd);
+    bd.querySelector("#_cc").onclick = () => bd.remove();
+    bd.querySelector("#_co").onclick = () => { bd.remove(); fn(); };
+    bd.onclick = (e) => { if (e.target === bd) bd.remove(); };
+  }
+
+  function showPullIndicator() { let i = $("pullInd"); if (!i) { i = document.createElement("div"); i.id = "pullInd"; i.className = "pull-indicator hidden"; i.innerHTML = '<span class="spin">⟳</span> Обновление…'; document.body.appendChild(i); } i.classList.remove("hidden"); }
+  function hidePullIndicator() { const i = $("pullInd"); if (i) i.classList.add("hidden"); }
+  document.addEventListener("touchstart", (e) => { if (window.scrollY === 0 && $("view-home") && !$("view-home").classList.contains("hidden")) { state.pullStartY = e.touches[0].clientY; state.pulling = true; } }, { passive: true });
+  document.addEventListener("touchmove", (e) => { if (!state.pulling) return; if (e.touches[0].clientY - state.pullStartY > 80 && window.scrollY === 0) { state.pulling = false; showPullIndicator(); haptic(); refreshHome().finally(hidePullIndicator); } }, { passive: true });
+  document.addEventListener("touchend", () => { state.pulling = false; }, { passive: true });
+
+  async function boot() {
+    if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor("#0b0d10"); tg.setBackgroundColor("#0b0d10"); } catch(e) {} }
+    loader(true);
+    try {
+      const r = await api("getProfile");
+      if (!r.ok) throw new Error(r.error || "AUTH_FAILED");
+      state.user = r.profile;
+      if (!state.user.agreedToRules) { $("view-gate").classList.remove("hidden"); } else { enterShell(); }
+    } catch(e) { toast("Откройте приложение через Telegram бот"); } finally { loader(false); }
+  }
+
+  function enterShell() { $("view-gate").classList.add("hidden"); $("shell").classList.remove("hidden"); renderProfile(); loadTemplates(); refreshHome(); nav("home"); }
+
+  $("btnAcceptRules").addEventListener("click", async () => { haptic(); loader(true); try { const r = await api("acceptRules"); if (r.ok) { state.user.agreedToRules = true; enterShell(); } else toast(r.error || "Ошибка"); } finally { loader(false); } });
+
+  function renderProfile() {
+    const p = state.user || {};
+    $("balanceValue").textContent = fmtMoney(p.balance);
+    $("profId").textContent = p.userId || "—";
+    $("profBalance").textContent = fmtMoney(p.balance);
+    $("profBots").textContent = p.botCount || 0;
+    $("profEarned").textContent = fmtMoney((p.totalEarned) || 0);
+    const fn = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name;
+    $("profAvatar").textContent = fn ? fn.charAt(0).toUpperCase() : "C";
+  }
+
+  async function refreshHome() {
+    try {
+      const [r, b] = await Promise.all([api("getProfile"), api("getBots")]);
+      if (r.ok) { state.user = r.profile; renderProfile(); }
+      if (b.ok) {
+        state.bots = b.bots || [];
+        $("statBots").textContent = state.bots.length;
+        let earned = 0;
+        await Promise.all(state.bots.slice(0, 8).map(async (bot) => { try { const s = await api("getStats", { globalId: bot.globalId }); if (s && s.ok) earned += Number(s.stats.opEarned) || 0; } catch(e) {} }));
+        $("statEarned").textContent = fmtMoney(earned);
+      }
+    } catch(e) {}
+  }
+
+  async function loadTemplates() {
+    try { const r = await api("getTemplateInfo"); if (r.ok) state.templates = r.templates || []; } catch(e) {}
+  }
+
+  async function loadBots() {
+    const wrap = $("botsList");
+    wrap.innerHTML = '<div class="empty-note">Загрузка…</div>';
+    try {
+      const r = await api("getBots");
+      if (!r.ok) throw new Error();
+      state.bots = r.bots || [];
+      if (!state.bots.length) { wrap.innerHTML = '<div class="empty-note">Пока нет ботов.<br>Создайте первого через ИИ-Креатор ✨</div>'; return; }
+      wrap.innerHTML = state.bots.map(botCardHtml).join("");
+      wrap.querySelectorAll(".toggle").forEach(t => t.addEventListener("click", onToggle));
+      wrap.querySelectorAll(".bot-card").forEach(c => c.addEventListener("click", (e) => { if (!e.target.closest(".toggle")) openSheet(c.dataset.gid); }));
+    } catch(e) { wrap.innerHTML = '<div class="empty-note">Ошибка загрузки</div>'; }
+  }
+
+  function botCardHtml(b) {
+    const info = b.isCustom ? { icon: "🧠", label: b.customTitle || "ИИ-проект" } : { icon: "🤖", label: b.template || "Бот" };
+    const st = b.status === "on" ? '<span class="badge badge-on">Включён</span>' : '<span class="badge badge-off">Выключен</span>';
+    return '<div class="glass bot-card" data-gid="' + esc(b.globalId) + '"><div class="bot-avatar">' + info.icon + '</div><div class="bot-info"><div class="bot-name">@' + esc(b.username || "—") + '</div><div class="bot-meta">' + esc(info.label) + '</div></div>' + st + '<div class="toggle ' + (b.status === "on" ? "on" : "") + '" data-gid="' + esc(b.globalId) + '"></div></div>';
+  }
+
+  async function onToggle(e) {
+    e.stopPropagation();
+    const gid = e.currentTarget.dataset.gid;
+    haptic(); loader(true);
+    try { const r = await api("toggleBot", { globalId: gid, origin: location.origin }); if (r.ok) { toast(r.status === "on" ? "Бот включён" : "Бот выключен"); haptic("ok"); loadBots(); } else toast(r.error || "Ошибка"); } finally { loader(false); }
+  }
+
+  function openSheet(gid) {
+    const bot = state.bots.find(x => String(x.globalId) === String(gid));
+    if (!bot) return;
+    state.currentBot = bot;
+    haptic();
+    const info = bot.isCustom ? { icon: "🧠", label: bot.customTitle || "ИИ-проект" } : { icon: "🤖", label: bot.template || "Бот" };
+    $("sheetBody").innerHTML = '<div class="sheet-title">' + info.icon + ' @' + esc(bot.username || "—") + '</div><div class="sheet-sub">' + esc(info.label) + ' · #' + esc(bot.globalId) + '</div><div class="sheet-stats" id="sheetStats"><div class="empty-note" style="grid-column:1/-1;padding:10px 0;">Загрузка…</div></div><div id="sheetInts"></div><div id="sheetExtra"></div><div class="sheet-actions"><button class="btn btn-danger btn-lg" id="btnDeleteBot">Удалить бота</button></div>';
+    $("sheetBackdrop").classList.remove("hidden");
+    $("botSheet").classList.remove("hidden");
+    $("btnDeleteBot").addEventListener("click", onDeleteBot);
+    fillSheet(bot);
+  }
+
+  async function fillSheet(bot) {
+    const gid = bot.globalId;
+    const [s, ints, ex] = await Promise.all([ api("getStats", { globalId: gid }).catch(() => null), api("getIntegrations", { globalId: gid }).catch(() => null), api("getExtra", { globalId: gid }).catch(() => null) ]);
+    if (String(state.currentBot && state.currentBot.globalId) !== String(gid)) return;
+    if (s && s.ok) { const st = s.stats; $("sheetStats").innerHTML = '<div class="sheet-stat"><b>' + fmtMoney(st.hostingBalance) + '</b><span>Хостинг</span></div><div class="sheet-stat"><b>' + fmtMoney(st.opEarned) + '</b><span>Доход ОП</span></div><div class="sheet-stat"><b>' + st.opSubs + '</b><span>Подписок</span></div>'; } else { $("sheetStats").innerHTML = ""; }
+    if (ints && ints.ok) { const i = ints.integrations; const row = (n, o) => '<div class="int-row"><span>' + esc(n) + (o.locked ? ' <span class="badge badge-gold">🔒</span>' : "") + '</span><span class="badge ' + (o.connected ? "badge-on" : "badge-off") + '">' + (o.connected ? "✅" : "—") + '</span></div>'; $("sheetInts").innerHTML = '<div class="glass card" style="padding:6px 16px;">' + row("PiarFlow", i.piarflow) + row("MGRAM", i.mgram) + row("Trafsly", i.trafsly) + row("Flyer", i.flyer) + '</div>'; }
+    if (ex && ex.ok) { const e = ex.extra; const labels = { none: "не подана", pending: "на проверке", pending_keys: "нужен ключ", approved: "одобрена", rejected: "отклонена" }; const canApply = ["none","rejected"].includes(e.opStatus); $("sheetExtra").innerHTML = '<div class="glass card" style="margin-top:12px;"><div class="int-row"><span>ОП заявка</span><span class="badge ' + (e.opStatus === "approved" ? "badge-on" : "badge-gold") + '">' + esc(labels[e.opStatus] || e.opStatus) + '</span></div>' + (canApply ? '<div class="earn-action"><button class="btn btn-gold btn-lg" id="btnApplyOp">Подать заявку</button></div>' : "") + '</div>'; const btn = $("btnApplyOp"); if (btn) btn.addEventListener("click", () => applyOp(gid)); }
+  }
+
+  async function applyOp(gid) { haptic(); loader(true); try { const r = await api("applyExtraOp", { globalId: gid }); if (r.ok && r.registered) { toast("✅ Подключено к ОП автоматически"); haptic("ok"); } else if (r.ok) toast("Заявка сохранена"); else toast(r.error || "Ошибка"); closeSheet(); loadBots(); } finally { loader(false); } }
+
+  async function onDeleteBot() { const bot = state.currentBot; if (!bot) return; showConfirm("Удалить @" + (bot.username || "") + "?", async () => { haptic("err"); loader(true); try { const r = await api("deleteBot", { globalId: bot.globalId }); if (r.ok) { toast("Бот удалён"); closeSheet(); loadBots(); refreshHome(); } else toast(r.error || "Ошибка"); } finally { loader(false); } }); }
+
+  function closeSheet() { $("sheetBackdrop").classList.add("hidden"); $("botSheet").classList.add("hidden"); state.currentBot = null; }
+  $("sheetBackdrop").addEventListener("click", closeSheet);
+
+  async function loadEarnTab(tab) {
+    document.querySelectorAll("#earnTabs button").forEach(b => b.classList.toggle("active", b.dataset.etab === tab));
+    $("earnTabBalance").classList.toggle("hidden", tab !== "balance");
+    $("earnTabOps").classList.toggle("hidden", tab !== "ops");
+    $("earnTabTx").classList.toggle("hidden", tab !== "tx");
+    $("earnTabRef").classList.toggle("hidden", tab !== "ref");
+    if (tab === "balance") await loadBalances();
+    if (tab === "tx") await loadTx(1);
+    if (tab === "ref") await loadRef();
+    if (tab === "ops") await loadOps();
+  }
+  document.querySelectorAll("#earnTabs button").forEach(b => b.addEventListener("click", () => { haptic(); loadEarnTab(b.dataset.etab); }));
+
+  async function loadBalances() {
+    const grid = $("balGrid");
+    grid.innerHTML = '<div class="glass bal-card"><div class="bal-value">…</div><div class="bal-label">Загрузка</div></div>';
+    try {
+      const r = await api("getBalances");
+      if (!r.ok) throw new Error();
+      const b = r.balances;
+      state.balances = b;
+      grid.innerHTML =
+        '<div class="glass bal-card gold"><div class="bal-value">' + fmtMoney(b.main) + '</div><div class="bal-label">Основной баланс</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.ref) + '</div><div class="bal-label">Реферальный</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.hosting) + '</div><div class="bal-label">Хостинг</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.opEarned) + '</div><div class="bal-label">ОП (доступно)</div></div>' +
+        '<div class="glass bal-card full"><div class="bal-value">' + fmtMoney(b.totalEarned) + '</div><div class="bal-label">Общий доход за всё время</div></div>';
+      $("balanceValue").textContent = fmtMoney(b.main);
+    } catch(e) { grid.innerHTML = '<div class="glass bal-card"><div class="bal-value">—</div><div class="bal-label">Ошибка загрузки</div></div>'; }
+  }
+
+  async function loadOps() {
+    if (state.balances) {
+      const b = state.balances;
+      const bh = $("depBonusHint"); if (bh) bh.textContent = b.depositBonus > 0 ? "Бонус +" + b.depositBonus + "% к пополнению" : "";
+      const ch = $("convRefHint"); if (ch) ch.textContent = "Доступно: " + fmtMoney(b.ref);
+    }
+  }
+
+  $("btnDeposit").addEventListener("click", async () => {
+    const amount = Number($("depAmount").value) || 0;
+    if (amount < 10) { toast("Минимум 10 ₽"); haptic("err"); return; }
+    haptic(); loader(true);
+    try {
+      const r = await api("createDeposit", { amount, method: "crypto" });
+      if (r.ok && r.payUrl) { window.open(r.payUrl, "_blank"); toast("Откройте ссылку для оплаты"); }
+      else if (r.ok && r.credited) { toast("✅ " + fmtMoney(amount) + " зачислено"); await loadBalances(); }
+      else toast(r.error || "Ошибка");
+    } finally { loader(false); }
+  });
+
+  $("btnWithdraw").addEventListener("click", async () => {
+    const amount = Number($("wdAmount").value) || 0;
+    const details = $("wdDetails").value.trim();
+    if (amount < 50) { toast("Минимум 50 ₽"); haptic("err"); return; }
+    if (!details) { toast("Укажите реквизиты"); haptic("err"); return; }
+    haptic(); loader(true);
+    try {
+      const r = await api("requestWithdraw", { amount, method: "card", details });
+      if (r.ok) { toast("✅ Заявка на вывод отправлена"); haptic("ok"); $("wdAmount").value = ""; $("wdDetails").value = ""; await loadBalances(); }
+      else toast(r.error || "Ошибка");
+    } finally { loader(false); }
+  });
+
+  $("btnConvert").addEventListener("click", async () => {
+    const amount = Number($("convAmount").value) || 0;
+    if (amount < 1) { toast("Введите сумму"); haptic("err"); return; }
+    haptic(); loader(true);
+    try {
+      const r = await api("convertBalance", { amount, from: "ref" });
+      if (r.ok) { toast("✅ Конвертировано"); haptic("ok"); $("convAmount").value = ""; await loadBalances(); await loadRef(); }
+      else toast(r.error || "Ошибка");
+    } finally { loader(false); }
+  });
+
+  async function loadTx(page) {
+    state.txPage = page || 1;
+    const wrap = $("txList");
+    wrap.innerHTML = '<div class="empty-note">Загрузка…</div>';
+    try {
+      const r = await api("getTransactions", { page: state.txPage, limit: 20 });
+      if (!r.ok) throw new Error();
+      const tx = r.transactions;
+      if (!tx.items.length) { wrap.innerHTML = '<div class="empty-note">Пока нет транзакций</div>'; $("txPaging").innerHTML = ""; return; }
+      wrap.innerHTML = tx.items.map(t => {
+        const isPos = (Number(t.amount) || 0) >= 0;
+        return '<div class="tx-item"><div><div class="tx-desc">' + esc(t.desc || "—") + '</div><div class="tx-date">' + fmtDate(t.date) + '</div></div><div class="tx-amount ' + (isPos ? "pos" : "neg") + '">' + (isPos ? "+" : "") + fmtMoney(t.amount) + '</div></div>';
+      }).join("");
+      let paging = "";
+      if (tx.pages > 1) {
+        if (state.txPage > 1) paging += '<button class="btn btn-ghost btn-sm" onclick="window._txPage(' + (state.txPage - 1) + ')">←</button> ';
+        paging += '<span style="color:var(--muted);font-size:12px">' + tx.page + ' / ' + tx.pages + '</span>';
+        if (state.txPage < tx.pages) paging += ' <button class="btn btn-ghost btn-sm" onclick="window._txPage(' + (state.txPage + 1) + ')">→</button>';
+      }
+      $("txPaging").innerHTML = paging;
+    } catch(e) { wrap.innerHTML = '<div class="empty-note">Ошибка загрузки</div>'; }
+  }
+  window._txPage = (p) => { haptic(); loadTx(p); };
+
+  async function loadRef() {
+    try {
+      const r = await api("getReferralStats");
+      if (!r.ok) throw new Error();
+      const ref = r.referral;
+      $("refLink").textContent = ref.refLink;
+      $("refStats").innerHTML =
+        '<div class="glass bal-card"><div class="bal-value">' + ref.refCount + '</div><div class="bal-label">Рефералов</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(ref.refBalance) + '</div><div class="bal-label">Реферальный баланс</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + ref.refPercent + '%</div><div class="bal-label">Процент</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(ref.refEarnings) + '</div><div class="bal-label">Заработано с рефералов</div></div>';
+    } catch(e) {}
+  }
+  $("btnRefCopy").addEventListener("click", () => { const link = $("refLink").textContent; if (navigator.clipboard) navigator.clipboard.writeText(link); toast("Скопировано!"); haptic("ok"); });
+
+  async function loadProfile() {
+    const [prof, bal, sup] = await Promise.all([ api("getProfile"), api("getBalances"), api("getSupportInfo") ]);
+    if (prof.ok) { state.user = prof.profile; renderProfile(); }
+    if (bal.ok) {
+      const b = bal.balances;
+      $("profEarned").textContent = fmtMoney(b.totalEarned);
+      $("profBalGrid").innerHTML =
+        '<div class="glass bal-card gold"><div class="bal-value">' + fmtMoney(b.main) + '</div><div class="bal-label">Основной</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.ref) + '</div><div class="bal-label">Реферальный</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.hosting) + '</div><div class="bal-label">Хостинг</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.opEarned) + '</div><div class="bal-label">ОП доход</div></div>' +
+        '<div class="glass bal-card"><div class="bal-value">' + fmtMoney(b.mgramEarned) + '</div><div class="bal-label">MGRAM доход</div></div>' +
+        '<div class="glass bal-card full"><div class="bal-value">' + fmtMoney(b.totalEarned) + '</div><div class="bal-label">Общий доход за всё время</div></div>';
+    }
+    if (sup.ok) {
+      const s = sup.support;
+      let html = "";
+      if (s.link) html += '<a href="' + esc(s.link) + '" target="_blank" class="btn btn-gold btn-lg" style="text-decoration:none;margin-bottom:10px">Написать в поддержку</a>';
+      if (s.helpText) html += '<div class="hint">Канал: ' + esc(s.helpText) + '</div>';
+      if (!html) html = '<div class="hint">Поддержка пока недоступна</div>';
+      $("supportSection").innerHTML = html;
+    }
+  }
+
+  const WIZ_STEPS = 4;
+  function renderWizTypes() {
+    const grid = $("typeGrid");
+    const sorted = [...state.templates].sort((a, b) => (a.priority || 99) - (b.priority || 99));
+    grid.innerHTML = sorted.map(t =>
+      '<button class="glass type-card' + (t.priority <= 2 ? " priority" : "") + '" data-type="' + t.id + '"><span class="type-icon">' + t.icon + '</span><span>' + esc(t.label) + '</span>' + (t.free ? '<span class="type-free">БЕСПЛАТНО</span>' : "") + '</button>'
+    ).join("");
+    grid.querySelectorAll(".type-card").forEach(c => c.addEventListener("click", () => { haptic(); state.wiz.type = c.dataset.type; grid.querySelectorAll(".type-card").forEach(x => x.classList.toggle("selected", x === c)); $("wizNext").disabled = false; }));
+  }
+
+  function wizRender() {
+    const w = state.wiz;
+    $("wizBar").style.width = Math.round((w.step / WIZ_STEPS) * 100) + "%";
+    $("wizLabel").textContent = ["Шаг 1 из 4 · Тип проекта", "Шаг 2 из 4 · Описание", "Шаг 3 из 4 · Генерация", "Шаг 4 из 4 · Публикация"][w.step - 1];
+    document.querySelectorAll(".wiz-pane").forEach(p => p.classList.toggle("hidden", Number(p.dataset.step) !== w.step));
+    $("wizBack").disabled = w.step === 1;
+    const next = $("wizNext");
+    next.textContent = w.step === 3 ? (w.blueprint ? "Пересобрать" : "Сгенерировать") : w.step === 4 ? "Опубликовать" : "Далее";
+    next.disabled = w.step === 1 && !w.type;
+    if (w.step === 1) renderWizTypes();
+    if (w.step === 4) {
+      const skip = NON_BOT_TYPES.includes(w.type);
+      $("wizRegWrap").classList.toggle("hidden", !!w.registered || skip);
+      $("wizDone").classList.toggle("hidden", !w.registered);
+      if (w.registered) {
+        $("doneTitle").textContent = w.registered.username && w.type === "bot" ? "@" + w.registered.username + " готов!" : "Проект создан!";
+        $("doneLink").textContent = w.registered.username && w.type === "bot" ? "https://t.me/" + w.registered.username : window.WORKER_URL.replace(/\/+$/, "") + "/site/" + w.registered.globalId;
+      }
+    }
+  }
+
+  $("wizBack").addEventListener("click", () => { if (state.wiz.step === 1) return; if (state.wiz.step === 4 && state.wiz.registered) { nav("bots"); return; } state.wiz.step--; wizRender(); });
+
+  $("wizNext").addEventListener("click", async () => {
+    const w = state.wiz; haptic();
+    if (w.step === 1) { w.step = 2; wizRender(); return; }
+    if (w.step === 2) {
+      w.title = $("wizTitle").value.trim(); w.tz = $("wizTz").value.trim();
+      if (!w.title || !w.tz) { toast("Заполните название и ТЗ"); haptic("err"); return; }
+      api("saveCustomDraft", { draft: { customType: w.type, customTitle: w.title, tz: w.tz } });
+      w.step = 3; wizRender(); return;
+    }
+    if (w.step === 3) {
+      $("wizGenStatus").textContent = "🧠 ИИ проектирует структуру…";
+      $("wizBlueprint").classList.add("hidden"); $("wizNext").disabled = true; loader(true);
+      try {
+        const r = await api("generateBlueprint", { draft: { customType: w.type, customTitle: w.title, tz: w.tz } });
+        if (!r.ok) throw new Error(r.error || "Ошибка");
+        w.blueprint = r.blueprint; haptic("ok");
+        $("wizGenStatus").textContent = "✅ Проект спроектирован:";
+        const bp = $("wizBlueprint"); bp.classList.remove("hidden"); bp.textContent = JSON.stringify(r.blueprint, null, 2).slice(0, 3500);
+        $("wizNext").disabled = false; $("wizNext").textContent = "Далее";
+      } catch(e) { haptic("err"); $("wizGenStatus").textContent = "❌ " + (e.message || "Ошибка"); $("wizNext").disabled = false; } finally { loader(false); }
+      return;
+    }
+    if (w.step === 4) {
+      const skip = NON_BOT_TYPES.includes(w.type); const token = $("wizToken").value.trim();
+      if (!skip && !token.includes(":")) { toast("Введите токен от @BotFather"); haptic("err"); return; }
+      loader(true); $("wizNext").disabled = true;
+      try {
+        const r = await api("registerCustom", { token: skip ? "" : token, origin: location.origin, draft: { customType: w.type, customTitle: w.title, tz: w.tz, blueprint: w.blueprint, blueprintOk: true } });
+        if (!r.ok) throw new Error(r.error || "Ошибка");
+        w.registered = r; haptic("ok"); wizRender(); toast("🎉 Проект опубликован!");
+      } catch(e) { haptic("err"); toast(e.message || "Ошибка"); $("wizNext").disabled = false; } finally { loader(false); }
+    }
+  });
+
+  $("btnHeroCreate").addEventListener("click", async () => {
+    state.wiz = { step: 1, type: null, title: "", tz: "", blueprint: null, registered: null };
+    $("wizTitle").value = ""; $("wizTz").value = ""; $("wizToken").value = "";
+    $("wizGenStatus").textContent = "Готово к генерации"; $("wizBlueprint").classList.add("hidden");
+    try { const r = await api("getCustomDraft"); if (r && r.ok && r.draft) { const d = r.draft; if (d.customType) { state.wiz.type = d.customType; } if (d.customTitle) $("wizTitle").value = d.customTitle; if (d.tz) $("wizTz").value = d.tz; } } catch(e) {}
+    wizRender(); nav("ai");
+  });
+
+  boot();
+})();
+</script>
+</body>
+</html>
