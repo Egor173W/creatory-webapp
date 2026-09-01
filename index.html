@@ -489,20 +489,17 @@ function delay(ms){return new Promise(function(x){setTimeout(x,ms)})}
 async function api(action,payload,silent){
   payload=payload||{};silent=!!silent;
   var initData=tg?tg.initData:"";
-  for(var a=0;a<=1;a++){
-    try{
-      var ctrl=new AbortController();
-      var tm=setTimeout(function(){ctrl.abort()},12000);
-      var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
-      clearTimeout(tm);
-      if(!r.ok){if(a<1){await delay(800);continue}return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status}}
-      return await r.json()
-    }catch(e){
-      if(a<1){await delay(800);continue}
-      var msg=e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442 \u0441\u0435\u0440\u0432\u0435\u0440\u0430":(e.message||"\u0421\u0435\u0442\u044C \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430");
-      if(!silent)toast(msg);
-      return{ok:false,error:msg}
-    }
+  try{
+    var ctrl=new AbortController();
+    var tm=setTimeout(function(){ctrl.abort()},5000);
+    var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
+    clearTimeout(tm);
+    if(!r.ok)return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status};
+    return await r.json()
+  }catch(e){
+    var msg=e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442":(e.message||"\u0421\u0435\u0442\u044C");
+    if(!silent)toast(msg);
+    return{ok:false,error:msg}
   }
 }
 
@@ -980,7 +977,15 @@ function boot(){
 
   loadTemplates().catch(function(){});
 
-  var btn=$("btnAcceptRules");if(btn)btn.onclick=function(){loader(true);api("acceptRules").then(function(rr){loader(false);if(rr.ok){var g=$("view-gate");if(g)g.classList.add("hidden");var sh=$("shell");if(sh)sh.classList.remove("hidden");nav("home")}else toast(rr.error||"Ошибка")}).catch(function(){loader(false);toast("Сеть недоступна")})};
+  var btn=$("btnAcceptRules");if(btn)btn.onclick=function(){
+    loader(true);
+    var gate=$("view-gate");if(gate)gate.classList.add("hidden");
+    var sh=$("shell");if(sh)sh.classList.remove("hidden");
+    nav("home");loader(false);
+    api("acceptRules").then(function(rr){
+      if(!rr.ok)toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")
+    }).catch(function(){});
+  };
 }
 
 boot();
