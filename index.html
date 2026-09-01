@@ -133,17 +133,29 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 .toggle.on{background:var(--gold-grad);border-color:transparent}
 .toggle.on::after{transform:translateX(20px)}
 .toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1c2027;border:1px solid var(--card-border);color:var(--text);padding:12px 20px;border-radius:14px;font-size:13.5px;font-weight:600;z-index:80;max-width:86%;text-align:center;animation:fadeIn 0.2s ease}
-.splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity 0.5s ease,transform 0.5s ease}
-.splash.out{opacity:0;transform:scale(1.06);pointer-events:none}
-.splash-orb{width:88px;height:88px;border-radius:28px;background:var(--gold-grad);color:#14100a;font-size:44px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 44px rgba(232,193,90,0.3);animation:splashPulse 1.4s ease-in-out infinite}
-@keyframes splashPulse{0%,100%{transform:scale(1);box-shadow:0 14px 44px rgba(232,193,90,0.3)}50%{transform:scale(1.04);box-shadow:0 18px 56px rgba(232,193,90,0.45)}}
-.splash-name{font-size:24px;font-weight:800;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.splash-sub{color:var(--muted);font-size:12px}
-.splash-dots{display:flex;gap:6px;margin-top:12px}
-.splash-bar-wrap{width:200px;height:4px;border-radius:999px;background:rgba(255,255,255,0.07);overflow:hidden;margin-top:14px}
-.splash-bar{height:100%;width:0%;background:var(--gold-grad);border-radius:999px;transition:width 0.3s ease}
-.splash-pct{font-size:12px;color:var(--muted);font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
-.splash-status{font-size:11px;color:var(--muted);margin-top:2px}
+.splash{position:fixed;inset:0;z-index:200;background:#0b0d10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden}
+.splash::before{content:"";position:absolute;top:-40%;left:-20%;width:140%;height:140%;background:radial-gradient(ellipse at 50% 30%,rgba(232,193,90,0.12) 0%,transparent 60%);animation:splashGlow 4s ease-in-out infinite alternate}
+@keyframes splashGlow{0%{opacity:0.4;transform:scale(1)}100%{opacity:1;transform:scale(1.1)}}
+.splash-particles{position:absolute;inset:0;pointer-events:none}
+.splash-particle{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(232,193,90,0.5);animation:splashFloat linear infinite}
+@keyframes splashFloat{0%{transform:translateY(100vh) scale(0);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:translateY(-20vh) scale(1);opacity:0}}
+.splash.out{opacity:0;transform:scale(1.08);pointer-events:none;transition:opacity 0.6s ease,transform 0.6s ease}
+.splash-orb{position:relative;width:96px;height:96px;border-radius:32px;background:var(--gold-grad);color:#14100a;font-size:44px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(232,193,90,0.35),0 0 120px rgba(232,193,90,0.15),inset 0 2px 0 rgba(255,255,255,0.3);animation:splashOrbIn 0.8s cubic-bezier(0.16,1,0.3,1) both,splashOrbPulse 2.5s ease-in-out 0.8s infinite;letter-spacing:-1px}
+@keyframes splashOrbIn{0%{transform:scale(0.3) rotate(-15deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes splashOrbPulse{0%,100%{box-shadow:0 0 60px rgba(232,193,90,0.35),0 0 120px rgba(232,193,90,0.15)}50%{box-shadow:0 0 80px rgba(232,193,90,0.5),0 0 160px rgba(232,193,90,0.25)}}
+.splash-ring{position:absolute;width:120px;height:120px;border-radius:36px;border:1.5px solid rgba(232,193,90,0.2);animation:splashRing 3s ease-in-out infinite}
+@keyframes splashRing{0%,100%{transform:scale(1);opacity:0.3}50%{transform:scale(1.08);opacity:0.6}}
+.splash-name{margin-top:24px;font-size:28px;font-weight:900;letter-spacing:1px;background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:splashFadeUp 0.7s 0.3s cubic-bezier(0.16,1,0.3,1) both}
+.splash-sub{color:var(--muted);font-size:13px;margin-top:6px;letter-spacing:0.5px;animation:splashFadeUp 0.7s 0.5s cubic-bezier(0.16,1,0.3,1) both}
+@keyframes splashFadeUp{0%{transform:translateY(20px);opacity:0}100%{transform:translateY(0);opacity:1}}
+.splash-bar-wrap{width:180px;height:3px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:32px;animation:splashFadeUp 0.7s 0.7s cubic-bezier(0.16,1,0.3,1) both}
+.splash-bar{height:100%;width:0%;background:var(--gold-grad);border-radius:999px;transition:width 0.25s ease}
+.splash-pct{font-size:11px;color:var(--muted);font-weight:700;margin-top:10px;font-variant-numeric:tabular-nums;animation:splashFadeUp 0.7s 0.9s cubic-bezier(0.16,1,0.3,1) both}
+.splash-dots{display:flex;gap:5px;margin-top:16px;animation:splashFadeUp 0.7s 1s cubic-bezier(0.16,1,0.3,1) both}
+.splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(232,193,90,0.3);animation:splashDot 1.2s ease-in-out infinite}
+.splash-dot:nth-child(2){animation-delay:0.2s}
+.splash-dot:nth-child(3){animation-delay:0.4s}
+@keyframes splashDot{0%,100%{background:rgba(232,193,90,0.3);transform:scale(1)}50%{background:rgba(232,193,90,0.8);transform:scale(1.3)}}
 .loader-overlay{position:fixed;inset:0;background:rgba(11,13,16,0.6);display:flex;align-items:center;justify-content:center;z-index:90}
 .spinner{width:42px;height:42px;border-radius:50%;border:3px solid rgba(232,193,90,0.2);border-top-color:var(--gold);animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -183,12 +195,14 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 </head>
 <body>
 <div id="splash" class="splash">
+  <div class="splash-particles" id="splashParticles"></div>
+  <div class="splash-ring"></div>
   <div class="splash-orb">BF</div>
   <div class="splash-name">BotFactory</div>
-  <div class="splash-sub">Премиум фабрика ботов</div>
+  <div class="splash-sub">Premium Bot Factory</div>
   <div class="splash-bar-wrap"><div class="splash-bar" id="splashBar"></div></div>
   <div class="splash-pct" id="splashPct">0%</div>
-  <div class="splash-status" id="splashStatus">Инициализация…</div>
+  <div class="splash-dots"><div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div></div>
 </div>
 <div id="app">
 
@@ -965,32 +979,29 @@ var btnBmDelete=$("btnBmDelete");if(btnBmDelete)btnBmDelete.addEventListener("cl
 window._bmTransfer=(async function(){var gid=state.manageGid;if(!gid)return;var newOwnerId=prompt("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F Telegram \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u0431\u043E\u0442\u0430:");if(!newOwnerId)return;loader(true);try{var r=await api("transferBot",{globalId:gid,newOwnerId:newOwnerId});if(r.ok){toast("\u2705 \u0411\u043E\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043D!");nav("bots");refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();
 var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventListener("click",window._bmTransfer);
 
-function hideSplash(){var s=$("splash");if(s){s.classList.add("out");setTimeout(function(){s.remove()},500)}}
+function hideSplash(){var s=$("splash");if(s){s.classList.add("out");setTimeout(function(){s.remove()},700)}}
 
-async function quickApi(action,payload){
-  try{
-    var ctrl=new AbortController();var tm=setTimeout(function(){ctrl.abort()},4000);
-    var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:tg?tg.initData:"",action:action},payload||{})),signal:ctrl.signal});
-    clearTimeout(tm);return await r.json()
-  }catch(e){return{ok:false,error:e.message}}
-}
+(function initParticles(){var c=$("splashParticles");if(!c)return;for(var i=0;i<18;i++){var p=document.createElement("div");p.className="splash-particle";p.style.left=Math.random()*100+"%";p.style.animationDuration=(3+Math.random()*5)+"s";p.style.animationDelay=Math.random()*4+"s";p.style.width=p.style.height=(2+Math.random()*3)+"px";c.appendChild(p)}})();
 
 function boot(){
   var bar=$("splashBar");var pctEl=$("splashPct");
-  var pct=0;var iv=setInterval(function(){pct+=12;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},120);
+  var pct=0;var iv=setInterval(function(){pct+=8;if(pct>95)pct=95;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},100);
 
-  quickApi("getProfile").then(function(r){
+  setTimeout(function(){
     clearInterval(iv);if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
-    if(r.ok&&r.profile){
-      state.user=r.profile;renderProfile();
-      if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");hideSplash();nav("home")}
-      else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
-    }else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
-  }).catch(function(){clearInterval(iv);hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")});
+    setTimeout(function(){hideSplash()},300);
+  },2500);
 
-  loadTemplates();
+  var ctrl=new AbortController();
+  setTimeout(function(){ctrl.abort()},5000);
+  fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData:tg?tg.initData:"",action:"getProfile"}),signal:ctrl.signal}).then(function(r){return r.json()}).then(function(r){
+    if(r.ok&&r.profile){state.user=r.profile;renderProfile();if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");var g=$("view-gate");if(g)g.classList.add("hidden");nav("home")}else{var g=$("view-gate");if(g)g.classList.remove("hidden")}}
+    else{var g=$("view-gate");if(g)g.classList.remove("hidden")}
+  }).catch(function(){var g=$("view-gate");if(g)g.classList.remove("hidden")});
 
-  var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var g2=$("view-gate");if(g2)g2.classList.add("hidden");var sh=$("shell");if(sh)sh.classList.remove("hidden");nav("home")}else toast(rr.error||"Ошибка")}finally{loader(false)}}
+  loadTemplates().catch(function(){});
+
+  var btn=$("btnAcceptRules");if(btn)btn.onclick=function(){loader(true);api("acceptRules").then(function(rr){loader(false);if(rr.ok){var g=$("view-gate");if(g)g.classList.add("hidden");var sh=$("shell");if(sh)sh.classList.remove("hidden");nav("home")}else toast(rr.error||"Ошибка")}).catch(function(){loader(false);toast("Сеть недоступна")})};
 }
 
 boot();
