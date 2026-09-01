@@ -967,19 +967,29 @@ var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventList
 
 function hideSplash(){var s=$("splash");if(s){s.classList.add("out");setTimeout(function(){s.remove()},500)}}
 
-async function boot(){
-  var bar=$("splashBar");var pctEl=$("splashPct");
-  var pct=0;var iv=setInterval(function(){pct+=10;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},120);
-  loadTemplates();
+async function quickApi(action,payload){
   try{
-    var r=await api("getProfile",{},true);
+    var ctrl=new AbortController();var tm=setTimeout(function(){ctrl.abort()},4000);
+    var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:tg?tg.initData:"",action:action},payload||{})),signal:ctrl.signal});
+    clearTimeout(tm);return await r.json()
+  }catch(e){return{ok:false,error:e.message}}
+}
+
+function boot(){
+  var bar=$("splashBar");var pctEl=$("splashPct");
+  var pct=0;var iv=setInterval(function(){pct+=12;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},120);
+
+  quickApi("getProfile").then(function(r){
     clearInterval(iv);if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
     if(r.ok&&r.profile){
       state.user=r.profile;renderProfile();
       if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");hideSplash();nav("home")}
       else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
     }else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
-  }catch(e){clearInterval(iv);hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
+  }).catch(function(){clearInterval(iv);hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")});
+
+  loadTemplates();
+
   var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var g2=$("view-gate");if(g2)g2.classList.add("hidden");var sh=$("shell");if(sh)sh.classList.remove("hidden");nav("home")}else toast(rr.error||"Ошибка")}finally{loader(false)}}
 }
 
