@@ -965,22 +965,22 @@ var btnBmDelete=$("btnBmDelete");if(btnBmDelete)btnBmDelete.addEventListener("cl
 window._bmTransfer=(async function(){var gid=state.manageGid;if(!gid)return;var newOwnerId=prompt("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F Telegram \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u0431\u043E\u0442\u0430:");if(!newOwnerId)return;loader(true);try{var r=await api("transferBot",{globalId:gid,newOwnerId:newOwnerId});if(r.ok){toast("\u2705 \u0411\u043E\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043D!");nav("bots");refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();
 var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventListener("click",window._bmTransfer);
 
+function hideSplash(){var s=$("splash");if(s){s.classList.add("out");setTimeout(function(){s.remove()},500)}}
+
 async function boot(){
-  var splashEl=$("splash");var bar=$("splashBar");var pctEl=$("splashPct");var statusEl=$("splashStatus");
-  var pct=0;setInterval(function(){if(pct<90){pct+=Math.random()*12+3;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=Math.round(pct)+"%"}},200);
-  if(statusEl)statusEl.textContent="\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A \u0441\u0435\u0440\u0432\u0435\u0440\u0443\u2026";
+  var bar=$("splashBar");var pctEl=$("splashPct");
+  var pct=0;var iv=setInterval(function(){pct+=10;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},120);
+  loadTemplates();
   try{
-    await loadTemplates();
     var r=await api("getProfile",{},true);
+    clearInterval(iv);if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
     if(r.ok&&r.profile){
       state.user=r.profile;renderProfile();
-      if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");var gate=$("view-gate");if(gate)gate.classList.add("hidden");nav("home")}
-      else{var gate=$("view-gate");if(gate)gate.classList.remove("hidden");var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var gate2=$("view-gate");if(gate2)gate2.classList.add("hidden");var sh2=$("shell");if(sh2)sh2.classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}}
-    }else{var gate=$("view-gate");if(gate)gate.classList.remove("hidden");var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var gate2=$("view-gate");if(gate2)gate2.classList.add("hidden");var sh2=$("shell");if(sh2)sh2.classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}}
-  }catch(e){var gate=$("view-gate");if(gate)gate.classList.remove("hidden");var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var gate2=$("view-gate");if(gate2)gate2.classList.add("hidden");var sh2=$("shell");if(sh2)sh2.classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}}
-  pct=100;if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
-  setTimeout(function(){var s=$("splash");if(s)s.classList.add("out")},400);
-  setTimeout(function(){var s=$("splash");if(s)s.remove()},1000);
+      if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");hideSplash();nav("home")}
+      else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
+    }else{hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
+  }catch(e){clearInterval(iv);hideSplash();var g=$("view-gate");if(g)g.classList.remove("hidden")}
+  var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){var g2=$("view-gate");if(g2)g2.classList.add("hidden");var sh=$("shell");if(sh)sh.classList.remove("hidden");nav("home")}else toast(rr.error||"Ошибка")}finally{loader(false)}}
 }
 
 boot();
