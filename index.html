@@ -370,7 +370,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
       <button class="glass cab-btn" onclick="nav('earn');window._earnTab('ops')"><span class="cab-icon">♻️</span><span class="cab-label">Конвертировать</span></button>
       <button class="glass cab-btn" onclick="nav('earn');window._earnTab('tx')"><span class="cab-icon">📋</span><span class="cab-label">История</span></button>
       <button class="glass cab-btn" onclick="nav('earn');window._earnTab('ref')"><span class="cab-icon">👥️</span><span class="cab-label">Партнёры</span></button>
-      <button class="glass cab-btn" onclick="toast('Скоро!')"><span class="cab-icon">🎁</span><span class="cab-label">Промокоды</span></button>
+      <button class="glass cab-btn" onclick="openPromoModal()"><span class="cab-icon">🎁</span><span class="cab-label">Промокоды</span></button>
       <button class="glass cab-btn" onclick="nav('earn')"><span class="cab-icon">📊</span><span class="cab-label">Мой доход</span></button>
     </div>
 
@@ -455,6 +455,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
     <div id="sheetBody"></div>
   </div>
 
+  <div class="sheet-backdrop hidden" id="promoBackdrop" onclick="closePromoModal()"></div>
+  <div class="sheet hidden" id="promoSheet">
+    <div class="sheet-handle"></div>
+    <div id="promoSheetBody"></div>
+  </div>
+
   <div id="toast" class="toast hidden"></div>
   <div id="loader" class="loader-overlay hidden"><div class="spinner"></div></div>
 </div>
@@ -508,6 +514,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
     if (view === "support") loadSupport();
     if (view === "market") loadMarket();
     if (view === "promo") loadPromo();
+    if (view === "ai") { if (!state.wiz || !state.wiz.step) { state.wiz = { step: 1, type: null, title: "", tz: "", blueprint: null, registered: null, category: "ai" }; state.wizCategory = "ai"; } wizRender(); }
   }
 
   document.addEventListener("click", (e) => { const n = e.target.closest("[data-nav]"); if (n) { haptic(); nav(n.dataset.nav); } });
@@ -533,41 +540,37 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
     const bar = $("splashBar");
     const pct = $("splashPct");
     const stat = $("splashStatus");
-    function splashSet(p, label) {
-      if (bar) bar.style.width = p + "%";
-      if (pct) pct.textContent = p + "%";
-      if (stat) stat.textContent = label;
-    }
+    function splashSet(p, label) { if (bar) bar.style.width = p + "%"; if (pct) pct.textContent = p + "%"; if (stat) stat.textContent = label; }
     function hideSplash() { if (sp) sp.classList.add("out"); }
     splashSet(5, "Инициализация…");
     if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor("#0b0d10"); tg.setBackgroundColor("#0b0d10"); } catch(e) {} }
     splashSet(15, "Telegram SDK");
-    if (!tg) { hideSplash(); $("view-gate").classList.remove("hidden"); const btn = $("btnAcceptRules"); if (btn) btn.textContent = "Откройте через Telegram бот"; return; }
-    splashSet(30, "Подключение к серверу…");
-    loader(true);
+    if (!tg) { hideSplash(); $("view-gate").classList.remove("hidden"); $("btnAcceptRules").textContent = "Откройте через Telegram бот"; return; }
+    splashSet(30, "Подключение…");
     try {
-      splashSet(50, "Загрузка профиля…");
+      splashSet(50, "Загрузка…");
       const r = await api("getProfile");
-      splashSet(70, "Проверка данных…");
-      if (!r.ok) throw new Error(r.error || "AUTH_FAILED");
-      state.user = r.profile;
-      if (state.user.isBanned) {
-        hideSplash(); loader(false);
-        $("view-gate").classList.remove("hidden");
-        $("gateRules").innerHTML = '<div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">⛔️</div><div style="font-size:20px;font-weight:800;margin-bottom:8px">Вы заблокированы</div><div style="color:var(--muted);font-size:14px">Обратитесь в поддержку для разбана</div></div>';
-        $("btnAcceptRules").classList.add("hidden");
+      splashSet(70, "Проверка…");
+      if (r.ok) {
+        state.user = r.profile;
+        if (state.user.isBanned) {
+          hideSplash(); loader(false);
+          $("view-gate").classList.remove("hidden");
+          $("gateRules").innerHTML = '<div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">⛔️</div><div style="font-size:20px;font-weight:800;margin-bottom:8px">Вы заблокированы</div><div style="color:var(--muted);font-size:14px">Обратитесь в поддержку</div></div>';
+          $("btnAcceptRules").classList.add("hidden");
+          return;
+        }
+        splashSet(90, "Готово!"); hideSplash();
+        await delay(150);
+        loader(false);
+        if (!state.user.agreedToRules) { $("view-gate").classList.remove("hidden"); } else { enterShell(); }
         return;
       }
-      splashSet(90, "Готово!");
-      hideSplash();
-      await delay(200);
-      if (!state.user.agreedToRules) { $("view-gate").classList.remove("hidden"); } else { enterShell(); }
-      loader(false);
-    } catch(e) {
-      hideSplash();
-      toast("Ошибка: " + (e.message || "Неизвестная"));
-      loader(false);
-    }
+    } catch(e) {}
+    hideSplash(); loader(false);
+    $("view-gate").classList.remove("hidden");
+    $("btnAcceptRules").textContent = "Войти";
+    $("btnAcceptRules").onclick = async () => { haptic(); loader(true); try { const r2 = await api("getProfile"); if (r2.ok && r2.profile) { state.user = r2.profile; $("view-gate").classList.add("hidden"); enterShell(); } else toast("Ошибка авторизации"); } catch(e2) { toast("Сервер недоступен"); } finally { loader(false); } };
   }
   function delay(ms) { return new Promise(x => setTimeout(x, ms)); }
 
@@ -607,7 +610,32 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
   }
 
   async function loadTemplates() {
-    try { const r = await api("getTemplateInfo", {}, true); if (r.ok) state.templates = r.templates || []; } catch(e) {}
+    try {
+      const r = await api("getTemplateInfo", {}, true);
+      if (r.ok && r.templates) {
+        state.templates = r.templates;
+      } else {
+        state.templates = [
+          { id: "custom", icon: "🧩", label: "ИИ-Креатор", desc: "Опишите идею — ИИ создаст проект", category: "ai", priority: 1, free: true },
+          { id: "invest", icon: "📈", label: "Инвест-бот", desc: "Инвестиционный бот", category: "template", priority: 10 },
+          { id: "tasks", icon: "📋", label: "Бот заданий", desc: "Бот с заданиями", category: "template", priority: 11 },
+          { id: "pr", icon: "🚀", label: "PR-бот", desc: "Продвижение и реклама", category: "template", priority: 12 },
+          { id: "star", icon: "⭐", label: "Звёздный бот", desc: "Игры и бонусы", category: "template", priority: 13 },
+          { id: "creator", icon: "⚙️", label: "Конструктор", desc: "Готовый конструктор", category: "template", priority: 14 },
+          { id: "exchange", icon: "♻️", label: "Обменник", desc: "Обмен валют", category: "template", priority: 15 },
+          { id: "feedback", icon: "✉️", label: "Обратная связь", desc: "Отзывы и заявки", category: "template", priority: 16 },
+          { id: "ref", icon: "👤", label: "Реферальный бот", desc: "Реферальная система", category: "template", priority: 17 }
+        ];
+      }
+    } catch(e) {
+      state.templates = [
+        { id: "custom", icon: "🧩", label: "ИИ-Креатор", category: "ai", priority: 1, free: true },
+        { id: "invest", icon: "📈", label: "Инвест-бот", category: "template", priority: 10 },
+        { id: "tasks", icon: "📋", label: "Бот заданий", category: "template", priority: 11 },
+        { id: "pr", icon: "🚀", label: "PR-бот", category: "template", priority: 12 },
+        { id: "star", icon: "⭐", label: "Звёздный бот", category: "template", priority: 13 }
+      ];
+    }
   }
 
   async function loadBots() {
@@ -1156,28 +1184,44 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
     const wrap = $("marketContent");
     wrap.innerHTML = '<div class="empty-note">Загрузка…</div>';
     try {
-      const [listings, myListings] = await Promise.all([ api("getMarketListings", {}, true), api("getMarketMyListings", {}, true) ]);
+      const [listings, myListings, myBots] = await Promise.all([
+        api("getMarketListings", {}, true).catch(() => ({ ok: false })),
+        api("getMarketMyListings", {}, true).catch(() => ({ ok: false })),
+        api("getBots", {}, true).catch(() => ({ ok: false }))
+      ]);
       let html = "";
+      if (myBots.ok && myBots.bots && myBots.bots.length) {
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:10px">📤 Продать бота</div><div class="bots-list" style="margin-bottom:16px">';
+        myBots.bots.filter(b => b.status !== "deleted").forEach(b => {
+          const info = b.isCustom ? { icon: "🧩", label: b.customTitle || "ИИ-проект" } : { icon: "🤖", label: b.template || "Бот" };
+          html += '<div class="glass bot-card"><div class="bot-avatar">' + info.icon + '</div><div class="bot-info"><div class="bot-name">@' + esc(b.username || "—") + '</div><div class="bot-meta">' + esc(info.label) + '</div></div><button class="btn btn-gold btn-sm" onclick="window._marketSell(\'' + esc(b.globalId) + '\',\'' + esc(b.username || "") + '\')">Продать</button></div>';
+        });
+        html += '</div>';
+      }
       if (myListings.ok && myListings.listings && myListings.listings.length) {
-        html += '<div class="section-title" style="font-size:15px;margin-bottom:10px">📤 Мои объявления</div>';
-        html += '<div class="bots-list" style="margin-bottom:20px">';
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:10px">📋 Мои объявления</div><div class="bots-list" style="margin-bottom:16px">';
         myListings.listings.forEach(l => {
           html += '<div class="glass bot-card"><div class="bot-avatar">🤖</div><div class="bot-info"><div class="bot-name">@' + esc(l.username || "—") + '</div><div class="bot-meta">' + esc(l.template || "") + ' · ' + fmtMoney(l.price) + '</div></div><button class="btn btn-danger btn-sm" onclick="window._marketDelist(\'' + esc(l.globalId) + '\')">Снять</button></div>';
         });
         html += '</div>';
       }
       if (listings.ok && listings.listings && listings.listings.length) {
-        html += '<div class="section-title" style="font-size:15px;margin-bottom:10px">🛒 Доступные боты</div>';
-        html += '<div class="bots-list">';
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:10px">🛒 Доступные боты</div><div class="bots-list">';
         listings.listings.forEach(l => {
-          html += '<div class="glass bot-card"><div class="bot-avatar">🤖</div><div class="bot-info"><div class="bot-name">@' + esc(l.username || "—") + '</div><div class="bot-meta">' + esc(l.template || "") + ' · ' + fmtMoney(l.price) + '</div></div></div>';
+          html += '<div class="glass bot-card"><div class="bot-avatar">🤖</div><div class="bot-info"><div class="bot-name">@' + esc(l.username || "—") + '</div><div class="bot-meta">' + esc(l.template || "") + '</div></div><b style="color:var(--gold)">' + fmtMoney(l.price) + '</b></div>';
         });
         html += '</div>';
       }
-      if (!html) html = '<div class="empty-note">Нет объявлений.<br>Продайте своего бота через меню управления.</div>';
+      if (!html) html = '<div class="empty-note">Нет объявлений.<br>Продайте своего бота через кнопку выше.</div>';
       wrap.innerHTML = html;
     } catch(e) { wrap.innerHTML = '<div class="empty-note">Ошибка загрузки</div>'; }
   }
+  window._marketSell = async function(gid, username) {
+    const price = prompt("Цена продажи @" + username + " (мин. 10 ₽):");
+    if (!price || Number(price) < 10) return;
+    loader(true);
+    try { const r = await api("marketSellStart", { globalId: gid, price: Number(price) }); if (r.ok) { toast("✅ Бот выставлен на продажу!"); loadMarket(); } else toast(r.error || "Ошибка"); } finally { loader(false); }
+  };
   window._marketDelist = async function(gid) {
     loader(true);
     try { const r = await api("marketDelist", { globalId: gid }); if (r.ok) { toast("Объявление снято"); loadMarket(); } else toast(r.error || "Ошибка"); } finally { loader(false); }
@@ -1190,16 +1234,53 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
       const r = await api("getPromoInfo", {}, true);
       if (r.ok && r.promo) {
         const p = r.promo;
-        let html = '<div class="glass card" style="padding:14px 16px"><div class="section-title" style="font-size:15px;margin-bottom:8px">✉️ Рассылка в ботах</div>';
-        html += '<div class="int-row"><span>Аудитория</span><b>' + p.botUsers + ' чел.</b></div>';
-        html += '<div class="int-row"><span>Цена за пользователя</span><b>' + fmtMoney(p.pricePerUser) + '</b></div>';
-        html += '<div class="int-row"><span>Мин. заказ</span><b>' + p.minOrder + ' ₽</b></div>';
+        let html = '<div class="glass card" style="padding:14px 16px">';
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:12px">✉️ Рассылка в ботах</div>';
+        html += '<div class="int-row"><span>Аудитория</span><b>' + (p.botUsers || 0) + ' чел.</b></div>';
+        html += '<div class="int-row"><span>Цена за пользователя</span><b>' + fmtMoney(p.pricePerUser || 0.05) + '</b></div>';
+        html += '<div class="int-row"><span>Мин. заказ</span><b>' + (p.minOrder || 100) + ' ₽</b></div>';
         html += '</div>';
-        html += '<div class="glass card" style="padding:14px 16px;margin-top:12px"><div class="section-title" style="font-size:15px;margin-bottom:8px">💰 Рассылка в креаторе</div><div style="font-size:13px;color:#c7cad1;line-height:1.5">Для рассылки напишите в поддержку</div></div>';
+        html += '<div class="glass card" style="padding:14px 16px;margin-top:12px">';
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:12px">Создать рассылку</div>';
+        html += '<label class="field-label">Количество пользователей</label>';
+        html += '<input class="field" type="number" id="promoCount" placeholder="' + (p.minOrder || 100) + '" min="' + (p.minOrder || 100) + '" max="' + (p.botUsers || 1000) + '">';
+        html += '<label class="field-label">Текст сообщения</label>';
+        html += '<textarea class="field field-area" id="promoText" placeholder="Текст вашей рассылки..."></textarea>';
+        html += '<div class="hint" id="promoCost"></div>';
+        html += '<button class="btn btn-gold btn-lg" style="margin-top:12px" onclick="window._promoCalc()">Рассчитать стоимость</button>';
+        html += '<button class="btn btn-gold btn-lg hidden" style="margin-top:8px" id="promoPayBtn" onclick="window._promoPay()">Оплатить и отправить</button>';
+        html += '</div>';
+        html += '<div class="glass card" style="padding:14px 16px;margin-top:12px">';
+        html += '<div class="section-title" style="font-size:15px;margin-bottom:8px">💰 Рассылка в креаторе</div>';
+        html += '<div style="font-size:13px;color:#c7cad1;line-height:1.5">Для индивидуальной рассылки в креаторе напишите в поддержку</div>';
+        html += '</div>';
         wrap.innerHTML = html;
       } else wrap.innerHTML = '<div class="empty-note">Информация недоступна</div>';
     } catch(e) { wrap.innerHTML = '<div class="empty-note">Ошибка загрузки</div>'; }
   }
+  window._promoCalc = function() {
+    const count = Number($("promoCount").value) || 0;
+    const text = $("promoText").value.trim();
+    if (count < 100) { toast("Мин. 100 пользователей"); return; }
+    if (!text) { toast("Введите текст"); return; }
+    const basePrice = 0.05;
+    const charExtra = Math.max(0, text.length - 50) * 0.003;
+    const totalPer = basePrice + charExtra;
+    const total = Math.round(totalPer * count * 100) / 100;
+    $("promoCost").innerHTML = '💰 <b>Итого: ' + fmtMoney(total) + '</b> (' + fmtMoney(totalPer) + ' × ' + count + ')';
+    $("promoPayBtn").classList.remove("hidden");
+    window._promoTotal = total;
+  };
+  window._promoPay = async function() {
+    const count = Number($("promoCount").value) || 0;
+    const text = $("promoText").value.trim();
+    const total = window._promoTotal || 0;
+    loader(true);
+    try {
+      const r = await api("requestWithdraw", { amount: total, method: "promo", details: JSON.stringify({ count, text }) });
+      if (r.ok) { toast("✅ Заявка на рассылку отправлена!"); haptic("ok"); } else toast(r.error || "Ошибка");
+    } finally { loader(false); }
+  };
 
   async function loadSupport() {
     const wrap = $("supportContent");
@@ -1225,6 +1306,57 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
       if (!html) html = '<div class="empty-note">Поддержка пока недоступна</div>';
       wrap.innerHTML = html;
     } catch(e) { wrap.innerHTML = '<div class="empty-note">Ошибка загрузки</div>'; }
+  }
+
+  function openPromoModal() {
+    haptic();
+    $("promoBackdrop").classList.remove("hidden");
+    $("promoSheet").classList.remove("hidden");
+    $("promoSheetBody").innerHTML = '<div class="sheet-title">🎁 Промокоды</div><div class="sheet-sub">Активируйте промокод для бонуса</div><div class="sheet-actions"><label class="field-label">Введите промокод</label><input class="field" id="promoCodeInput" placeholder="Например: BONUS50"><button class="btn btn-gold btn-lg" id="btnApplyPromo">Активировать</button></div><div id="promoActiveWrap" style="margin-top:16px"></div>';
+    $("btnApplyPromo").addEventListener("click", applyPromoCode);
+    loadPromoCodes();
+  }
+
+  function closePromoModal() {
+    $("promoBackdrop").classList.add("hidden");
+    $("promoSheet").classList.add("hidden");
+  }
+
+  async function loadPromoCodes() {
+    const wrap = $("promoActiveWrap");
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="empty-note" style="padding:10px 0">Загрузка…</div>';
+    try {
+      const r = await api("getPromoCodes", {}, true);
+      if (r.ok && r.codes && r.codes.length) {
+        wrap.innerHTML = '<div style="font-weight:700;font-size:14px;margin-bottom:8px">Активные промокоды</div>' + r.codes.map(c =>
+          '<div class="glass card" style="padding:12px 14px;margin-bottom:8px"><div class="int-row"><span><b>' + esc(c.code) + '</b></span><span class="badge badge-on">Активен</span></div><div class="int-row"><span>' + esc(c.type === "percent" ? "+" + c.value + "%" : "+" + fmtMoney(c.value)) + '</span><span style="color:var(--muted);font-size:12px">' + (c.usedAt ? "Активирован " + fmtDate(c.usedAt) : "Не использован") + '</span></div></div>'
+        ).join("");
+      } else {
+        wrap.innerHTML = '<div class="empty-note" style="padding:10px 0">Нет активных промокодов</div>';
+      }
+    } catch(e) { wrap.innerHTML = '<div class="empty-note" style="padding:10px 0">Ошибка загрузки</div>'; }
+  }
+
+  async function applyPromoCode() {
+    const input = $("promoCodeInput");
+    const code = (input ? input.value : "").trim().toUpperCase();
+    if (!code) { toast("Введите промокод"); haptic("err"); return; }
+    haptic(); loader(true);
+    try {
+      const r = await api("applyPromoCode", { code });
+      if (r.ok) {
+        haptic("ok");
+        toast("✅ " + (r.message || "Промокод активирован!"));
+        if (r.bonus) toast("Бонус: " + r.bonus);
+        if (input) input.value = "";
+        loadPromoCodes();
+        loadBalances().catch(() => {});
+      } else {
+        toast(r.error || "Промокод недействителен");
+        haptic("err");
+      }
+    } finally { loader(false); }
   }
 
   boot();
