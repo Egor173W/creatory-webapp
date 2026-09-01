@@ -194,16 +194,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 </style>
 </head>
 <body>
-<div id="splash" class="splash">
-  <div class="splash-particles" id="splashParticles"></div>
-  <div class="splash-ring"></div>
-  <div class="splash-orb">BF</div>
-  <div class="splash-name">BotFactory</div>
-  <div class="splash-sub">Premium Bot Factory</div>
-  <div class="splash-bar-wrap"><div class="splash-bar" id="splashBar"></div></div>
-  <div class="splash-pct" id="splashPct">0%</div>
-  <div class="splash-dots"><div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div></div>
-</div>
+<div id="splash" class="splash" style="display:none"></div>
 <div id="app">
 
   <section id="view-gate" class="view gate hidden">
@@ -979,19 +970,7 @@ var btnBmDelete=$("btnBmDelete");if(btnBmDelete)btnBmDelete.addEventListener("cl
 window._bmTransfer=(async function(){var gid=state.manageGid;if(!gid)return;var newOwnerId=prompt("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F Telegram \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u0431\u043E\u0442\u0430:");if(!newOwnerId)return;loader(true);try{var r=await api("transferBot",{globalId:gid,newOwnerId:newOwnerId});if(r.ok){toast("\u2705 \u0411\u043E\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043D!");nav("bots");refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();
 var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventListener("click",window._bmTransfer);
 
-function hideSplash(){var s=$("splash");if(s){s.classList.add("out");setTimeout(function(){s.remove()},700)}}
-
-(function initParticles(){var c=$("splashParticles");if(!c)return;for(var i=0;i<18;i++){var p=document.createElement("div");p.className="splash-particle";p.style.left=Math.random()*100+"%";p.style.animationDuration=(3+Math.random()*5)+"s";p.style.animationDelay=Math.random()*4+"s";p.style.width=p.style.height=(2+Math.random()*3)+"px";c.appendChild(p)}})();
-
 function boot(){
-  var bar=$("splashBar");var pctEl=$("splashPct");
-  var pct=0;var iv=setInterval(function(){pct+=8;if(pct>95)pct=95;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=pct+"%"},100);
-
-  setTimeout(function(){
-    clearInterval(iv);if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
-    setTimeout(function(){hideSplash()},300);
-  },2500);
-
   var ctrl=new AbortController();
   setTimeout(function(){ctrl.abort()},5000);
   fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData:tg?tg.initData:"",action:"getProfile"}),signal:ctrl.signal}).then(function(r){return r.json()}).then(function(r){
