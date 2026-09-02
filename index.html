@@ -507,7 +507,7 @@ async function api(action,payload,silent){
   var initData=tg?tg.initData:"";
   try{
     var ctrl=new AbortController();
-    var tm=setTimeout(function(){ctrl.abort()},5000);
+    var tm=setTimeout(function(){ctrl.abort()},12000);
     var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
     clearTimeout(tm);
     if(!r.ok)return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status};
@@ -537,14 +537,14 @@ function renderProfile(){var p=state.user||{};var el;el=$("balanceValue");if(el)
 
 async function refreshHome(){
   try{
-    var r=await api("getProfile",{},true);
+    var results=await Promise.all([api("getProfile",{},true),api("getBots",{},true)]);
+    var r=results[0],b=results[1];
     if(r.ok){state.user=r.profile;renderProfile()}
-    var b=await api("getBots",{},true);
     if(b.ok){
       state.bots=b.bots||[];
       var el=$("statBots");if(el)el.textContent=state.bots.length;
       if(b.totalEarned!==undefined){var el2=$("statEarned");if(el2)el2.textContent=fmtMoney(b.totalEarned)}
-      else{var earned=0;await Promise.all(state.bots.slice(0,10).map(async function(bot){try{var s=await api("getStats",{globalId:bot.globalId},true);if(s&&s.ok)earned+=Number(s.stats.opEarned)||0}catch(e){}}));var el3=$("statEarned");if(el3)el3.textContent=fmtMoney(earned)}
+      else{var earned=0;var statsResults=await Promise.all(state.bots.slice(0,10).map(function(bot){return api("getStats",{globalId:bot.globalId},true).catch(function(){return null})}));statsResults.forEach(function(s){if(s&&s.ok)earned+=Number(s.stats.opEarned)||0});var el3=$("statEarned");if(el3)el3.textContent=fmtMoney(earned)}
     }
   }catch(e){}
 }
@@ -984,8 +984,9 @@ window._bmTransfer=(async function(){var gid=state.manageGid;if(!gid)return;var 
 var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventListener("click",window._bmTransfer);
 
 function boot(){
+  state.templates=DEFAULT_TEMPLATES.slice();
   var ctrl=new AbortController();
-  setTimeout(function(){ctrl.abort()},5000);
+  setTimeout(function(){ctrl.abort()},12000);
   fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData:tg?tg.initData:"",action:"getProfile"}),signal:ctrl.signal}).then(function(r){return r.json()}).then(function(r){
     if(r.ok&&r.profile){state.user=r.profile;renderProfile();if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");var g=$("view-gate");if(g)g.classList.add("hidden");nav("home")}else{var g=$("view-gate");if(g)g.classList.remove("hidden")}}
     else{var g=$("view-gate");if(g)g.classList.remove("hidden")}
