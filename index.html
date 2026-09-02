@@ -987,6 +987,10 @@ function loadBots(){
   }).catch(function(){});
 }
 
+async function loadTemplates(){
+  try{var r=await api("getTemplateInfo",{},true);if(r.ok&&r.templates){state.templates=r.templates}else{state.templates=DEFAULT_TEMPLATES.slice()}}catch(e){state.templates=DEFAULT_TEMPLATES.slice()}
+}
+
 function boot(){
   state.templates=DEFAULT_TEMPLATES.slice();
   var cachedProfile=cacheGet("profile");
@@ -995,6 +999,17 @@ function boot(){
   if(cachedProfile)state.user=cachedProfile;
   if(cachedBots)state.bots=cachedBots;
   if(cachedBalances)state.balances=cachedBalances;
+
+  var tgUser=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+  if(tgUser){
+    if(!state.user){
+      state.user={userId:String(tgUser.id),firstName:tgUser.first_name||"",lastName:tgUser.last_name||"",username:tgUser.username||"",balance:0,totalEarned:0,botCount:0,agreedToRules:false};
+    }else{
+      if(!state.user.userId)state.user.userId=String(tgUser.id);
+      if(!state.user.firstName)state.user.firstName=tgUser.first_name||"";
+      if(!state.user.username)state.user.username=tgUser.username||"";
+    }
+  }
 
   if(cachedProfile&&cachedProfile.agreedToRules){
     $("shell").classList.remove("hidden");
@@ -1024,6 +1039,7 @@ function boot(){
   loadTemplates().catch(function(){});
 
   $("btnAcceptRules").onclick=function(){
+    if(!state.user){var tgU=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;if(tgU)state.user={userId:String(tgU.id),firstName:tgU.first_name||"",lastName:tgU.last_name||"",username:tgU.username||"",balance:0,totalEarned:0,botCount:0,agreedToRules:true};else state.user={userId:"",firstName:"",balance:0,totalEarned:0,botCount:0,agreedToRules:true}}
     $("view-gate").classList.add("hidden");
     $("shell").classList.remove("hidden");
     renderProfile();
