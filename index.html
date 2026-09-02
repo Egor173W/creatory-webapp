@@ -19,15 +19,23 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 .mono{font-family:"SF Mono","Cascadia Mono",Consolas,monospace;font-size:13px}
 .glass{background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-lg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .card{padding:20px}
-.view.gate{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:32px 20px calc(32px + env(safe-area-inset-bottom))}
+.view.gate{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:20px;padding:40px 24px calc(40px + env(safe-area-inset-bottom))}
 .gate-logo{text-align:center}
-.logo-orb{width:84px;height:84px;margin:0 auto 16px;border-radius:28px;background:var(--gold-grad);color:#14100a;font-size:42px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(232,193,90,0.25)}
-.gate-title{font-size:30px;font-weight:800;letter-spacing:0.5px}
-.gate-sub{color:var(--muted);margin-top:6px;font-size:14px}
-.rules-head{font-weight:700;font-size:16px;margin-bottom:12px}
-.rules-list{list-style:none;display:grid;gap:10px}
-.rules-list li{padding-left:22px;position:relative;color:#c7cad1;font-size:13.5px}
-.rules-list li::before{content:"";position:absolute;left:4px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.logo-orb{width:88px;height:88px;margin:0 auto 18px;border-radius:30px;background:var(--gold-grad);color:#14100a;font-size:40px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 16px 48px rgba(232,193,90,0.3),inset 0 2px 0 rgba(255,255,255,0.3);animation:logoIn 0.6s cubic-bezier(0.16,1,0.3,1) both}
+@keyframes logoIn{0%{transform:scale(0.7) rotate(-8deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.gate-title{font-size:32px;font-weight:900;letter-spacing:0.5px;animation:fadeUp 0.5s 0.1s cubic-bezier(0.16,1,0.3,1) both}
+.gate-sub{color:var(--muted);margin-top:6px;font-size:13px;animation:fadeUp 0.5s 0.2s cubic-bezier(0.16,1,0.3,1) both}
+@keyframes fadeUp{0%{transform:translateY(16px);opacity:0}100%{transform:translateY(0);opacity:1}}
+.gate-rules{animation:fadeUp 0.5s 0.3s cubic-bezier(0.16,1,0.3,1) both}
+.rules-head{font-weight:800;font-size:16px;margin-bottom:14px;color:var(--gold)}
+.rules-list{list-style:none;display:grid;gap:12px}
+.rules-list li{padding-left:26px;position:relative;color:#c7cad1;font-size:13.5px;line-height:1.5}
+.rules-list li::before{content:"";position:absolute;left:4px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(232,193,90,0.4)}
+.gate-features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;animation:fadeUp 0.5s 0.4s cubic-bezier(0.16,1,0.3,1) both}
+.gate-feat{display:flex;align-items:center;gap:8px;padding:12px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--r-md);font-size:12.5px;color:#c7cad1}
+.gate-feat-icon{font-size:18px}
+.gate-btn-wrap{animation:fadeUp 0.5s 0.5s cubic-bezier(0.16,1,0.3,1) both}
+#btnAcceptRules{width:100%;padding:18px;font-size:16px;border-radius:var(--r-lg)}
 .btn{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;border-radius:var(--r-md);padding:14px 22px;transition:transform 0.12s ease,opacity 0.12s ease,box-shadow 0.12s ease}
 .btn:active{transform:scale(0.97);opacity:0.9}
 .btn[disabled]{opacity:0.45;pointer-events:none}
@@ -199,9 +207,9 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 
   <section id="view-gate" class="view gate">
     <div class="gate-logo">
-      <div class="logo-orb">C</div>
+      <div class="logo-orb">BF</div>
       <div class="gate-title">BotFactory</div>
-      <div class="gate-sub">Премиум фабрика Telegram-ботов</div>
+      <div class="gate-sub">Premium Bot Factory</div>
     </div>
     <div class="glass card gate-rules" id="gateRules">
       <div class="rules-head">Условия использования</div>
@@ -212,7 +220,15 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
         <li>Запрещены проекты, нарушающие правила Telegram</li>
       </ul>
     </div>
-    <button class="btn btn-gold btn-lg" id="btnAcceptRules">Принять и продолжить</button>
+    <div class="gate-features">
+      <div class="gate-feat"><span class="gate-feat-icon">🧠</span>ИИ-Креатор</div>
+      <div class="gate-feat"><span class="gate-feat-icon">💰</span>Доп. доход</div>
+      <div class="gate-feat"><span class="gate-feat-icon">🚀</span>Быстрый старт</div>
+      <div class="gate-feat"><span class="gate-feat-icon">🛡</span>Безопасность</div>
+    </div>
+    <div class="gate-btn-wrap">
+      <button class="btn btn-gold btn-lg" id="btnAcceptRules">Принять и продолжить</button>
+    </div>
   </section>
 
   <div id="shell" class="hidden">
@@ -482,7 +498,7 @@ var toastTimer=null;
 function toast(t,ms){ms=ms||2600;var el=$("toast");if(!el)return;el.textContent=t;el.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.add("hidden")},ms)}
 function loader(on){var el=$("loader");if(el)el.classList.toggle("hidden",!on)}
 function fmtMoney(n){return(Number(n)||0).toFixed(2).replace(/\.00$/,"")+" \u20BD"}
-function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){"&amp;":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
 function fmtDate(ts){if(!ts)return"\u2014";var d=new Date(ts);return d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}
 function delay(ms){return new Promise(function(x){setTimeout(x,ms)})}
 
