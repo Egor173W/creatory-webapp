@@ -896,6 +896,9 @@ async function applyPromoCode(){
 document.addEventListener("click",function(e){
   var tgt=e.target;
 
+  var typeCard=tgt.closest(".type-card");
+  if(typeCard){haptic();state.wiz.type=typeCard.dataset.type;document.querySelectorAll(".type-card").forEach(function(x){x.classList.toggle("selected",x===typeCard)});var wn=$("wizNext");if(wn)wn.disabled=false;return}
+
   var navEl=tgt.closest("[data-nav]");
   if(navEl){e.preventDefault();nav(navEl.dataset.nav);return}
 
