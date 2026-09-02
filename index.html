@@ -504,23 +504,19 @@ function delay(ms){return new Promise(function(x){setTimeout(x,ms)})}
 
 function cacheGet(k){try{var v=localStorage.getItem("bf_"+k);return v?JSON.parse(v):null}catch(e){return null}}
 function cacheSet(k,v){try{localStorage.setItem("bf_"+k,JSON.stringify(v))}catch(e){}}
-function cacheDel(k){try{localStorage.removeItem("bf_"+k)}catch(e){}}
-
 
 async function api(action,payload,silent){
   payload=payload||{};silent=!!silent;
   var initData=tg?tg.initData:"";
   try{
     var ctrl=new AbortController();
-    var tm=setTimeout(function(){ctrl.abort()},12000);
+    var tm=setTimeout(function(){ctrl.abort()},15000);
     var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
     clearTimeout(tm);
     if(!r.ok)return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status};
     return await r.json()
   }catch(e){
-    var msg=e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442":(e.message||"\u0421\u0435\u0442\u044C");
-    if(!silent)toast(msg);
-    return{ok:false,error:msg}
+    return{ok:false,error:e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442":(e.message||"\u0421\u0435\u0442\u044C")}
   }
 }
 
@@ -540,38 +536,10 @@ function showConfirm(text,fn){var bd=document.createElement("div");bd.className=
 
 function renderProfile(){var p=state.user||{};var el;el=$("balanceValue");if(el)el.textContent=fmtMoney(p.balance);el=$("profId");if(el)el.textContent=p.userId||"\u2014";el=$("profBalance");if(el)el.textContent=fmtMoney(p.balance);el=$("profBots");if(el)el.textContent=p.botCount||0;el=$("profEarned");if(el)el.textContent=fmtMoney(p.totalEarned||0);var fn=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.first_name;el=$("profAvatar");if(el)el.textContent=fn?fn.charAt(0).toUpperCase():"C"}
 
-async function refreshHome(){
-  var cachedProfile=cacheGet("profile");
-  var cachedBots=cacheGet("bots");
-  if(cachedProfile){state.user=cachedProfile;renderProfile()}
-  if(cachedBots){state.bots=cachedBots;var el=$("statBots");if(el)el.textContent=cachedBots.length}
-  try{
-    var results=await Promise.all([api("getProfile",{},true),api("getBots",{},true)]);
-    var r=results[0],b=results[1];
-    if(r.ok){state.user=r.profile;cacheSet("profile",r.profile);renderProfile()}
-    if(b.ok){
-      state.bots=b.bots||[];cacheSet("bots",state.bots);
-      var el=$("statBots");if(el)el.textContent=state.bots.length;
-      if(b.totalEarned!==undefined){var el2=$("statEarned");if(el2)el2.textContent=fmtMoney(b.totalEarned)}
-      else if(state.bots.length){var statsResults=await Promise.all(state.bots.slice(0,10).map(function(bot){return api("getStats",{globalId:bot.globalId},true).catch(function(){return null})}));var earned=0;statsResults.forEach(function(s){if(s&&s.ok)earned+=Number(s.stats.opEarned)||0});var el3=$("statEarned");if(el3)el3.textContent=fmtMoney(earned)}
-    }
-  }catch(e){}
-}
-
-async function loadTemplates(){
-  try{var r=await api("getTemplateInfo",{},true);if(r.ok&&r.templates){state.templates=r.templates}else{state.templates=DEFAULT_TEMPLATES.slice()}}catch(e){state.templates=DEFAULT_TEMPLATES.slice()}
-}
-
-async function loadBots(){
+function renderBots(){
   var wrap=$("botsList");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
-  try{
-    var r=await api("getBots",{},true);
-    if(!r.ok)throw new Error();
-    state.bots=r.bots||[];
-    if(!state.bots.length){wrap.innerHTML='<div class="empty-note">\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0431\u043E\u0442\u043E\u0432.<br>\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0447\u0435\u0440\u0435\u0437 \u0418\u0418-\u041A\u0440\u0435\u0430\u0442\u043E\u0440</div>';return}
-    wrap.innerHTML=state.bots.map(botCardHtml).join("")
-  }catch(e){wrap.innerHTML='<div class="empty-note">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  if(!state.bots.length){wrap.innerHTML='<div class="empty-note">\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0431\u043E\u0442\u043E\u0432.<br>\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0447\u0435\u0440\u0435\u0437 \u0418\u0418-\u041A\u0440\u0435\u0430\u0442\u043E\u0440</div>';return}
+  wrap.innerHTML=state.bots.map(botCardHtml).join("");
 }
 
 function botCardHtml(b){
@@ -585,7 +553,7 @@ function openSheet(gid){
   if(!bot)return;state.currentBot=bot;haptic();
   var info=bot.isCustom?{icon:"\uD83E\uDDE9",label:bot.customTitle||"\u0418\u0418-\u043F\u0440\u043E\u0435\u043A\u0442"}:{icon:"\uD83E\uDD16",label:bot.template||"\u0411\u043E\u0442"};
   var el=$("sheetBody");if(!el)return;
-  el.innerHTML='<div class="sheet-title">'+info.icon+' @'+esc(bot.username||"\u2014")+'</div><div class="sheet-sub">'+esc(info.label)+' · #'+esc(bot.globalId)+'</div><div class="sheet-stats" id="sheetStats"><div class="empty-note" style="grid-column:1/-1;padding:10px 0;">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div></div><div id="sheetInts"></div><div id="sheetExtra"></div><div class="sheet-actions"><button class="btn btn-danger btn-lg" data-action="deletesheet">\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0431\u043E\u0442\u0430</button></div>';
+  el.innerHTML='<div class="sheet-title">'+info.icon+' @'+esc(bot.username||"\u2014")+'</div><div class="sheet-sub">'+esc(info.label)+' \u00B7 #'+esc(bot.globalId)+'</div><div class="sheet-stats" id="sheetStats"><div class="empty-note" style="grid-column:1/-1;padding:10px 0;">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div></div><div id="sheetInts"></div><div id="sheetExtra"></div><div class="sheet-actions"><button class="btn btn-danger btn-lg" data-action="deletesheet">\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0431\u043E\u0442\u0430</button></div>';
   var bd=$("sheetBackdrop");if(bd)bd.classList.remove("hidden");
   var bs=$("botSheet");if(bs)bs.classList.remove("hidden");
   fillSheet(bot)
@@ -607,9 +575,6 @@ async function onDeleteBot(){var bot=state.currentBot;if(!bot)return;showConfirm
 
 function closeSheet(){var bd=$("sheetBackdrop");if(bd)bd.classList.add("hidden");var bs=$("botSheet");if(bs)bs.classList.add("hidden");state.currentBot=null}
 
-function showPullIndicator(){var i=$("pullInd");if(!i){i=document.createElement("div");i.id="pullInd";i.className="pull-indicator hidden";i.innerHTML='<span class="spin">\u27F3</span> \u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435\u2026';document.body.appendChild(i)}i.classList.remove("hidden")}
-function hidePullIndicator(){var i=$("pullInd");if(i)i.classList.add("hidden")}
-
 function nav(view){
   haptic();
   document.querySelectorAll(".content .view").forEach(function(v){v.classList.add("hidden")});
@@ -618,34 +583,35 @@ function nav(view){
   var tab=document.querySelector('.tabbar .tab[data-nav="'+view+'"]');if(tab)tab.classList.add("active");
   window.scrollTo({top:0});
   if(view==="bots")loadBots();
-  if(view==="earn"){loadBalances().then(function(){loadOps()})}
-  if(view==="profile")loadProfile();
+  if(view==="earn"){renderBalances();loadBalancesBg()}
+  if(view==="profile"){renderProfile();loadProfileBg()}
   if(view==="market")loadMarket();
   if(view==="promo")loadPromo();
   if(view==="support")loadSupport();
-  if(view==="ai"){wizRender()}
+  if(view==="ai")wizRender();
   if(view==="home")refreshHome();
 }
 
-async function loadBalances(){
+function renderBalances(){
   var grid=$("balGrid");if(!grid)return;
-  grid.innerHTML='<div class="glass bal-card"><div class="bal-value">\u2026</div><div class="bal-label">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430</div></div>';
-  try{
-    var r=await api("getBalances");
-    if(!r.ok)throw new Error();
-    var b=r.balances;state.balances=b;
-    grid.innerHTML='<div class="glass bal-card gold"><div class="bal-value">'+fmtMoney(b.main)+'</div><div class="bal-label">\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0431\u0430\u043B\u0430\u043D\u0441</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.ref)+'</div><div class="bal-label">\u0420\u0435\u0444\u0435\u0440\u0430\u043B\u044C\u043D\u044B\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.hosting)+'</div><div class="bal-label">\u0425\u043E\u0441\u0442\u0438\u043D\u0433</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.opEarned)+'</div><div class="bal-label">\u041E\u041F (\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E)</div></div><div class="glass bal-card full"><div class="bal-value">'+fmtMoney(b.totalEarned)+'</div><div class="bal-label">\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0445\u043E\u0434 \u0437\u0430 \u0432\u0441\u0451 \u0432\u0440\u0435\u043C\u044F</div></div>';
+  var b=state.balances;
+  if(b){
+    grid.innerHTML='<div class="glass bal-card gold"><div class="bal-value">'+fmtMoney(b.main)+'</div><div class="bal-label">\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439 \u0431\u0430\u043B\u0430\u043D\u0441</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.ref)+'</div><div class="bal-label">\u0420\u0435\u0444\u0435\u0440\u0430\u043B\u044C\u043D\u044B\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.hosting)+'</div><div class="bal-label">\u0425\u043E\u0441\u0442\u0438\u043D\u0433</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.opEarned)+'</div><div class="bal-label">\u041E\u041F (\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E)</div></div><div class="glass bal-card full"><div class="bal-value">'+fmtMoney(b.totalEarned)+'</div><div class="bal-label">\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0445\u043E\u0434</div></div>';
     var bv=$("balanceValue");if(bv)bv.textContent=fmtMoney(b.main);
-  }catch(e){grid.innerHTML='<div class="glass bal-card"><div class="bal-value">\u2014</div><div class="bal-label">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div></div>'}
+  }else{
+    grid.innerHTML='<div class="glass bal-card gold"><div class="bal-value">\u2014</div><div class="bal-label">\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439</div></div><div class="glass bal-card"><div class="bal-value">\u2014</div><div class="bal-label">\u0420\u0435\u0444\u0435\u0440\u0430\u043B\u044C\u043D\u044B\u0439</div></div><div class="glass bal-card"><div class="bal-value">\u2014</div><div class="bal-label">\u0425\u043E\u0441\u0442\u0438\u043D\u0433</div></div><div class="glass bal-card"><div class="bal-value">\u2014</div><div class="bal-label">\u041E\u041F</div></div><div class="glass bal-card full"><div class="bal-value">\u2014</div><div class="bal-label">\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0445\u043E\u0434</div></div>';
+  }
 }
 
-async function loadOps(){
-  if(state.balances){var b=state.balances;var bh=$("depBonusHint");if(bh)bh.textContent=b.depositBonus>0?"\u0411\u043E\u043D\u0443\u0441 +"+b.depositBonus+"% \u043A \u043F\u043E\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044E":"";var ch=$("convRefHint");if(ch)ch.textContent="\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E: "+fmtMoney(b.ref)}
+function loadBalancesBg(){
+  api("getBalances",{},true).then(function(r){
+    if(r.ok){state.balances=r.balances;cacheSet("balances",r.balances);renderBalances();var bh=$("depBonusHint");if(bh)bh.textContent=r.balances.depositBonus>0?"\u0411\u043E\u043D\u0443\u0441 +"+r.balances.depositBonus+"% \u043A \u043F\u043E\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044E":"";var ch=$("convRefHint");if(ch)ch.textContent="\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E: "+fmtMoney(r.balances.ref)}
+  }).catch(function(){});
 }
 
 async function loadTx(page){
   state.txPage=page||1;var wrap=$("txList");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
+  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div>';
   try{
     var r=await api("getTransactions",{page:state.txPage,limit:20});
     if(!r.ok)throw new Error();
@@ -655,7 +621,7 @@ async function loadTx(page){
     var paging="";
     if(tx.pages>1){if(state.txPage>1)paging+='<button class="btn btn-ghost btn-sm" data-txpage="'+(state.txPage-1)+'">\u2190</button> ';paging+='<span style="color:var(--muted);font-size:12px">'+tx.page+' / '+tx.pages+'</span>';if(state.txPage<tx.pages)paging+=' <button class="btn btn-ghost btn-sm" data-txpage="'+(state.txPage+1)+'">\u2192</button>'}
     var pg=$("txPaging");if(pg)pg.innerHTML=paging;
-  }catch(e){wrap.innerHTML='<div class="empty-note">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  }catch(e){wrap.innerHTML='<div class="empty-note">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445</div>'}
 }
 
 async function loadRef(){
@@ -670,12 +636,13 @@ async function loadRef(){
   }catch(e){}
 }
 
-async function loadProfile(){
-  var results=await Promise.all([api("getProfile",{},true),api("getBalances",{},true),api("getSupportInfo",{},true)]);
-  var prof=results[0],bal=results[1],sup=results[2];
-  if(prof.ok){state.user=prof.profile;renderProfile()}
-  if(bal.ok){var b=bal.balances;var pe=$("profEarned");if(pe)pe.textContent=fmtMoney(b.totalEarned);var pbg=$("profBalGrid");if(pbg)pbg.innerHTML='<div class="glass bal-card gold"><div class="bal-value">'+fmtMoney(b.main)+'</div><div class="bal-label">\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.ref)+'</div><div class="bal-label">\u0420\u0435\u0444\u0435\u0440\u0430\u043B\u044C\u043D\u044B\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.hosting)+'</div><div class="bal-label">\u0425\u043E\u0441\u0442\u0438\u043D\u0433</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.opEarned)+'</div><div class="bal-label">\u041E\u041F \u0434\u043E\u0445\u043E\u0434</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.mgramEarned||0)+'</div><div class="bal-label">MGRAM \u0434\u043E\u0445\u043E\u0434</div></div><div class="glass bal-card full"><div class="bal-value">'+fmtMoney(b.totalEarned)+'</div><div class="bal-label">\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0445\u043E\u0434 \u0437\u0430 \u0432\u0441\u0451 \u0432\u0440\u0435\u043C\u044F</div></div>'}
-  if(sup.ok){var s=sup.support;var html="";if(s.link)html+='<a href="'+esc(s.link)+'" target="_blank" class="btn btn-gold btn-lg" style="text-decoration:none;margin-bottom:10px">\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0432 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0443</a>';if(s.helpText)html+='<div class="hint">\u041A\u0430\u043D\u0430\u043B: '+esc(s.helpText)+'</div>';if(!html)html='<div class="hint">\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0430 \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430</div>';var ss=$("supportSection");if(ss)ss.innerHTML=html}
+function loadProfileBg(){
+  Promise.all([api("getProfile",{},true),api("getBalances",{},true),api("getSupportInfo",{},true)]).then(function(results){
+    var prof=results[0],bal=results[1],sup=results[2];
+    if(prof.ok){state.user=prof.profile;cacheSet("profile",prof.profile);renderProfile()}
+    if(bal.ok){var b=bal.balances;state.balances=b;cacheSet("balances",b);var pe=$("profEarned");if(pe)pe.textContent=fmtMoney(b.totalEarned);var pbg=$("profBalGrid");if(pbg)pbg.innerHTML='<div class="glass bal-card gold"><div class="bal-value">'+fmtMoney(b.main)+'</div><div class="bal-label">\u041E\u0441\u043D\u043E\u0432\u043D\u043E\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.ref)+'</div><div class="bal-label">\u0420\u0435\u0444\u0435\u0440\u0430\u043B\u044C\u043D\u044B\u0439</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.hosting)+'</div><div class="bal-label">\u0425\u043E\u0441\u0442\u0438\u043D\u0433</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.opEarned)+'</div><div class="bal-label">\u041E\u041F \u0434\u043E\u0445\u043E\u0434</div></div><div class="glass bal-card"><div class="bal-value">'+fmtMoney(b.mgramEarned||0)+'</div><div class="bal-label">MGRAM \u0434\u043E\u0445\u043E\u0434</div></div><div class="glass bal-card full"><div class="bal-value">'+fmtMoney(b.totalEarned)+'</div><div class="bal-label">\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0445\u043E\u0434</div></div>'}
+    if(sup.ok){var s=sup.support;var html="";if(s.link)html+='<a href="'+esc(s.link)+'" target="_blank" class="btn btn-gold btn-lg" style="text-decoration:none;margin-bottom:10px">\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0432 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0443</a>';if(s.helpText)html+='<div class="hint">\u041A\u0430\u043D\u0430\u043B: '+esc(s.helpText)+'</div>';if(!html)html='<div class="hint">\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0430 \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430</div>';var ss=$("supportSection");if(ss)ss.innerHTML=html}
+  }).catch(function(){});
 }
 
 var WIZ_STEPS=4;
@@ -745,7 +712,7 @@ $("wizNext").addEventListener("click",async function(){
   }
   if(!isTmpl){
     if(w.step===1){w.step=2;renderWizStep2();wizRender();return}
-    if(w.step===2){w.title=$("wizTitle").value.trim();w.tz=$("wizTz").value.trim();if(!w.title||!w.tz){toast("\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0438 \u0422\u0417");haptic("err");return}api("saveCustomDraft",{draft:{customType:w.type,customTitle:w.title,tz:w.tz}});w.step=3;renderWizStep3();wizRender();return}
+    if(w.step===2){w.title=$("wizTitle").value.trim();w.tz=$("wizTz").value.trim();if(!w.title||!w.tz){toast("\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0438 \u0422\u0417");haptic("err");return}api("saveCustomDraft",{draft:{customType:w.type,customTitle:w.title,tz:w.tz}},true);w.step=3;renderWizStep3();wizRender();return}
     if(w.step===3){var gs=$("wizGenStatus");var bp=$("wizBlueprint");if(gs)gs.textContent="\uD83E\uDDE0 \u0418\u0418 \u043F\u0440\u043E\u0435\u043A\u0442\u0438\u0440\u0443\u0435\u0442 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u2026";if(bp)bp.classList.add("hidden");var wn=$("wizNext");wn.disabled=true;loader(true);try{var r=await api("generateBlueprint",{draft:{customType:w.type,customTitle:w.title,tz:w.tz}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.blueprint=r.blueprint;haptic("ok");if(gs)gs.textContent="\u2705 \u041F\u0440\u043E\u0435\u043A\u0442 \u0441\u043F\u0440\u043E\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D:";if(bp){bp.classList.remove("hidden");bp.textContent=JSON.stringify(r.blueprint,null,2).slice(0,3500)}wn.disabled=false}catch(e){haptic("err");if(gs)gs.textContent="\u274C "+(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}return}
     if(w.step===4){var skip=NON_BOT_TYPES.includes(w.type);var tokenEl=$("wizToken");var token=tokenEl?tokenEl.value.trim():"";if(!skip&&!token.includes(":")){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u043E\u043A\u0435\u043D \u043E\u0442 @BotFather");haptic("err");return}loader(true);var wn=$("wizNext");wn.disabled=true;try{var r=await api("registerCustom",{token:skip?"":token,origin:location.origin,draft:{customType:w.type,customTitle:w.title,tz:w.tz,blueprint:w.blueprint,blueprintOk:true}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.registered=r;haptic("ok");wizRender();toast("\uD83C\uDF89 \u041F\u0440\u043E\u0435\u043A\u0442 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D!");}catch(e){haptic("err");toast(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}}
   }
@@ -766,37 +733,36 @@ async function openBotManage(gid){
   state.manageGid=gid;haptic();
   document.querySelectorAll(".content .view").forEach(function(v){v.classList.add("hidden")});
   var bm=$("view-botmanage");if(bm)bm.classList.remove("hidden");
-  document.querySelectorAll(".tabbar .tab").forEach(function(t2){t2.classList.remove("active")});
-  window.scrollTo({top:0});loader(true);
-  try{
-    var results=await Promise.all([api("getBotSettings",{globalId:gid},true),api("getBotStats",{globalId:gid},true).catch(function(){return null}),api("getIntegrations",{globalId:gid},true).catch(function(){return null}),api("getExtra",{globalId:gid},true).catch(function(){return null})]);
-    var settings=results[0],stats=results[1],ints=results[2],ex=results[3];
-    if(settings.ok){
-      var s=settings.settings;
-      var bmt=$("bmTitle");if(bmt)bmt.textContent="\u2699\uFE0F @"+(s.username||"\u2014");
-      var isOn=s.status==="on";
-      var bmh=$("bmHeader");if(bmh)bmh.innerHTML='<div style="display:flex;align-items:center;gap:10px"><div class="badge badge-on">'+esc(s.template)+'</div><span style="color:var(--muted);font-size:12px">#'+esc(s.globalId)+'</span><span style="flex:1"></span><span style="color:var(--muted);font-size:12px">'+(isOn?"\uD83D\uDFE2 \u0417\u0430\u043F\u0443\u0449\u0435\u043D":"\u26AA \u0412\u044B\u043A\u043B\u044E\u0447\u0435\u043D")+'</span></div>';
-      var bmtw=$("bmToggleWrap");if(bmtw)bmtw.innerHTML='<div class="int-row"><span style="font-weight:700">'+(isOn?"\uD83D\uDFE2 \u0411\u043E\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D":"\u26AA \u0411\u043E\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D")+'</span><div class="toggle '+(isOn?"on":"")+'" data-action="bmtoggle" data-gid="'+esc(gid)+'"></div></div>';
-      renderBmSettings(s);
-      var bmhs=$("bmHostingSection");if(bmhs)bmhs.innerHTML='<div class="glass card" style="padding:14px 16px"><div class="int-row"><span>\uD83D\uDDC4 \u0414\u0438\u0441\u043A</span><b>'+(stats&&stats.ok?"~"+Math.round((stats.stats.dbSizeKb||0))+" KB":"\u2014")+'</b></div><div class="int-row"><span>\uD83D\uDCE5 RAM</span><b>'+(stats&&stats.ok?(stats.stats.ramUsage||0)+" MB":"\u2014")+'</b></div><div class="int-row"><span>\u269C\uFE0F CPU</span><b>'+(stats&&stats.ok?(stats.stats.cpuPercent||0)+"%":"\u2014")+'</b></div><div class="int-row"><span>\uD83D\uDD12 \u0410\u043F\u0442\u0430\u0439\u043C</span><b>'+(stats&&stats.ok?(stats.stats.uptime||"\u2014"):"\u2014")+'</b></div></div>';
-      var bmes=$("bmExportSection");if(bmes)bmes.innerHTML='<button class="btn btn-ghost btn-lg" data-action="bmexport" data-gid="'+esc(gid)+'">\uD83D\uDCE6 \u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439</button>';
-    }
-    if(stats&&stats.ok)renderBmStats(stats.stats);
-    if(ints&&ints.ok)renderBmIntegrations(ints.integrations);
-    if(ex&&ex.ok)renderBmExtra(ex.extra,gid);
-  }catch(e){toast("\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438")}finally{loader(false)}
+  document.querySelectorAll(".tabbar .tab").forEach(function(t){t.classList.remove("active")});
+  window.scrollTo({top:0});
+  var bot=state.bots.find(function(x){return String(x.globalId)===String(gid)});
+  if(!bot)return;
+  var info=bot.isCustom?{icon:"\uD83E\uDDE9",label:bot.customTitle||"\u0418\u0418-\u043F\u0440\u043E\u0435\u043A\u0442"}:{icon:"\uD83E\uDD16",label:bot.template||"\u0411\u043E\u0442"};
+  var el=$("bmTitle");if(el)el.textContent=info.icon+" @"+(bot.username||"");
+  var hdr=$("bmHeader");if(hdr)hdr.innerHTML='<div class="sheet-title">'+info.icon+' @'+esc(bot.username||"\u2014")+'</div><div class="sheet-sub">'+esc(info.label)+' \u00B7 #'+esc(bot.globalId)+'</div>';
+  var tog=$("bmToggleWrap");if(tog)tog.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-weight:700">'+(bot.status==="on"?"\uD83D\uDFE2 \u0411\u043E\u0442 \u0432\u043A\u043B\u044E\u0447\u0451\u043D":"\u26AA \u0411\u043E\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D")+'</span><div class="toggle '+(bot.status==="on"?"on":"")+'" data-action="bmtoggle" data-gid="'+esc(bot.globalId)+'"></div></div>';
+  var r=await api("getBotSettings",{globalId:gid},true);
+  if(r.ok&&r.settings){renderBmSettings(r.settings,r.config||{})}
+  var results=await Promise.all([api("getStats",{globalId:gid},true).catch(function(){return null}),api("getIntegrations",{globalId:gid},true).catch(function(){return null}),api("getExtra",{globalId:gid},true).catch(function(){return null})]);
+  if(results[0]&&results[0].ok)renderBmStats(results[0].stats);
+  if(results[1]&&results[1].ok)renderBmIntegrations(results[1].integrations);
+  if(results[2]&&results[2].ok)renderBmExtra(results[2].extra,gid);
 }
 
-function renderBmSettings(s){
+function renderBmSettings(fields,config){
   var wrap=$("bmTabSettings");if(!wrap)return;
   var html='<div class="glass card" style="padding:14px 16px">';
-  for(var i=0;i<s.fields.length;i++){
-    var f=s.fields[i];var label=FIELD_LABELS[f]||f;var val=s.values[f]||"";
-    var isBool=["OP_ENABLED"].includes(f);
-    if(isBool){html+='<div class="int-row"><span>'+esc(label)+'</span><div class="toggle '+(val==="true"||val===true?"on":"")+'" data-action="bmtogglefield" data-field="'+f+'"></div></div>'}
-    else{html+='<label class="field-label">'+esc(label)+'</label><input class="field" data-bmfield="'+f+'" value="'+esc(val)+'" placeholder="'+esc(f)+'">'}
-  }
-  html+='<button class="btn btn-gold btn-lg" style="margin-top:14px" data-action="bmsave">\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C</button></div>';
+  Object.keys(FIELD_LABELS).forEach(function(k){
+    if(k==="ADMIN_IDS")return;
+    var val=config[k]||"";
+    var isBool=k.includes("ENABLED")||k==="OP_ENABLED";
+    if(isBool){
+      html+='<div class="int-row"><span>'+FIELD_LABELS[k]+'</span><div class="toggle '+(val==="true"||val===true?"on":"")+'" data-action="bmtogglefield" data-field="'+k+'"></div></div>';
+    }else{
+      html+='<label class="field-label">'+FIELD_LABELS[k]+'</label><input class="field" data-bmfield="'+k+'" value="'+esc(String(val))+'" placeholder="'+FIELD_LABELS[k]+'">';
+    }
+  });
+  html+='<button class="btn btn-gold btn-lg" style="margin-top:16px" data-action="bmsave">\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C</button></div>';
   wrap.innerHTML=html;
 }
 
@@ -822,7 +788,7 @@ document.querySelectorAll("[data-btab]").forEach(function(btn){btn.addEventListe
 
 async function loadMarket(){
   var wrap=$("marketContent");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
+  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div>';
   try{
     var results=await Promise.all([api("getMarketListings",{},true).catch(function(){return{ok:false}}),api("getMarketMyListings",{},true).catch(function(){return{ok:false}}),api("getBots",{},true).catch(function(){return{ok:false}})]);
     var listings=results[0],myListings=results[1],myBots=results[2];
@@ -834,7 +800,7 @@ async function loadMarket(){
     }
     if(myListings.ok&&myListings.listings&&myListings.listings.length){
       html+='<div class="section-title" style="font-size:15px;margin-bottom:10px">\uD83D\uDCCB \u041C\u043E\u0438 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u044F</div><div class="bots-list" style="margin-bottom:16px">';
-      myListings.listings.forEach(function(l){html+='<div class="glass bot-card"><div class="bot-avatar">\uD83E\uDD16</div><div class="bot-info"><div class="bot-name">@'+esc(l.username||"\u2014")+'</div><div class="bot-meta">'+esc(l.template||"")+' · '+fmtMoney(l.price)+'</div></div><button class="btn btn-danger btn-sm" data-action="marketdelist" data-gid="'+esc(l.globalId)+'">\u0421\u043D\u044F\u0442\u044C</button></div>'});
+      myListings.listings.forEach(function(l){html+='<div class="glass bot-card"><div class="bot-avatar">\uD83E\uDD16</div><div class="bot-info"><div class="bot-name">@'+esc(l.username||"\u2014")+'</div><div class="bot-meta">'+esc(l.template||"")+' \u00B7 '+fmtMoney(l.price)+'</div></div><button class="btn btn-danger btn-sm" data-action="marketdelist" data-gid="'+esc(l.globalId)+'">\u0421\u043D\u044F\u0442\u044C</button></div>'});
       html+='</div>';
     }
     if(listings.ok&&listings.listings&&listings.listings.length){
@@ -844,12 +810,12 @@ async function loadMarket(){
     }
     if(!html)html='<div class="empty-note">\u041D\u0435\u0442 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0439.<br>\u041F\u0440\u043E\u0434\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0435\u0433\u043E \u0431\u043E\u0442\u0430 \u0447\u0435\u0440\u0435\u0437 \u043A\u043D\u043E\u043F\u043A\u0443 \u0432\u044B\u0448\u0435.</div>';
     wrap.innerHTML=html;
-  }catch(e){wrap.innerHTML='<div class="empty-note">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  }catch(e){wrap.innerHTML='<div class="empty-note">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445</div>'}
 }
 
 async function loadPromo(){
   var wrap=$("promoContent");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
+  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div>';
   try{
     var r=await api("getPromoInfo",{},true);
     if(r.ok&&r.promo){
@@ -869,12 +835,12 @@ async function loadPromo(){
       html+='<div class="glass card" style="padding:14px 16px;margin-top:12px"><div class="section-title" style="font-size:15px;margin-bottom:8px">\uD83D\uDCB0 \u0420\u0430\u0441\u0441\u044B\u043B\u043A\u0430 \u0432 \u043A\u0440\u0435\u0430\u0442\u043E\u0440\u0435</div><div style="font-size:13px;color:#c7cad1;line-height:1.5">\u0414\u043B\u044F \u0438\u043D\u0434\u0438\u0432\u0438\u0434\u0443\u0430\u043B\u044C\u043D\u043E\u0439 \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0438 \u0432 \u043A\u0440\u0435\u0430\u0442\u043E\u0440\u0435 \u043D\u0430\u043F\u0438\u0448\u0438\u0442\u0435 \u0432 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0443</div></div>';
       wrap.innerHTML=html;
     }else wrap.innerHTML='<div class="empty-note">\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430</div>';
-  }catch(e){wrap.innerHTML='<div class="empty-note">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  }catch(e){wrap.innerHTML='<div class="empty-note">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445</div>'}
 }
 
 async function loadSupport(){
   var wrap=$("supportContent");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
+  wrap.innerHTML='<div class="empty-note">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div>';
   try{
     var r=await api("getSupportLink");var html="";
     if(r.ok&&r.support){var s=r.support;
@@ -888,7 +854,7 @@ async function loadSupport(){
     }
     if(!html)html='<div class="empty-note">\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u043A\u0430 \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430</div>';
     wrap.innerHTML=html;
-  }catch(e){wrap.innerHTML='<div class="empty-note">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  }catch(e){wrap.innerHTML='<div class="empty-note">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445</div>'}
 }
 
 function openPromoModal(){
@@ -906,13 +872,13 @@ function closePromoModal(){
 
 async function loadPromoCodes(){
   var wrap=$("promoActiveWrap");if(!wrap)return;
-  wrap.innerHTML='<div class="empty-note" style="padding:10px 0">\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026</div>';
+  wrap.innerHTML='<div class="empty-note" style="padding:10px 0">\u0417\u0430\u0433\u0440\u0443\u043A\u0430\u2026</div>';
   try{
     var r=await api("getPromoCodes",{},true);
     if(r.ok&&r.codes&&r.codes.length){
       wrap.innerHTML='<div style="font-weight:700;font-size:14px;margin-bottom:8px">\u0410\u043A\u0442\u0438\u0432\u043D\u044B\u0435 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434\u044B</div>'+r.codes.map(function(c){return '<div class="glass card" style="padding:12px 14px;margin-bottom:8px"><div class="int-row"><span><b>'+esc(c.code)+'</b></span><span class="badge badge-on">\u0410\u043A\u0442\u0438\u0432\u0435\u043D</span></div><div class="int-row"><span>'+(c.type==="percent"?"+"+c.value+"%":"+"+fmtMoney(c.value))+'</span><span style="color:var(--muted);font-size:12px">'+(c.usedAt?"\u0410\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D "+fmtDate(c.usedAt):"\u041D\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D")+'</span></div></div>'}).join("");
     }else{wrap.innerHTML='<div class="empty-note" style="padding:10px 0">\u041D\u0435\u0442 \u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0445 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434\u043E\u0432</div>'}
-  }catch(e){wrap.innerHTML='<div class="empty-note" style="padding:10px 0">\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438</div>'}
+  }catch(e){wrap.innerHTML='<div class="empty-note" style="padding:10px 0">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445</div>'}
 }
 
 async function applyPromoCode(){
@@ -922,7 +888,7 @@ async function applyPromoCode(){
   haptic();loader(true);
   try{
     var r=await api("applyPromoCode",{code:code});
-    if(r.ok){haptic("ok");toast("\u2705 "+(r.message||"\u041F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D!"));if(r.bonus)toast("\u0411\u043E\u043D\u0443\u0441: "+r.bonus);if(input)input.value="";loadPromoCodes();loadBalances().catch(function(){})}
+    if(r.ok){haptic("ok");toast("\u2705 "+(r.message||"\u041F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D!"));if(r.bonus)toast("\u0411\u043E\u043D\u0443\u0441: "+r.bonus);if(input)input.value="";loadPromoCodes();loadBalancesBg()}
     else{toast(r.error||"\u041F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u0435\u043D");haptic("err")}
   }finally{loader(false)}
 }
@@ -970,7 +936,7 @@ document.addEventListener("click",function(e){
   if(marketdelist){(async function(){loader(true);try{var r=await api("marketDelist",{globalId:marketdelist.dataset.gid});if(r.ok){toast("\u041E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u0438\u0435 \u0441\u043D\u044F\u0442\u043E");loadMarket()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();return}
 
   var promocalc=tgt.closest("[data-action='promocalc']");
-  if(promocalc){var count=Number(($("promoCount")||{}).value)||0;var text=(($("promoText")||{}).value||"").trim();if(count<100){toast("\u041C\u0438\u043D. 100 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439");return}if(!text){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442");return}var base=0.05;var extra=Math.max(0,text.length-50)*0.003;var totalPer=base+extra;var total=Math.round(totalPer*count*100)/100;var pc=$("promoCost");if(pc)pc.innerHTML='\uD83D\uDCB0 <b>\u0418\u0442\u043E\u0433\u043E: '+fmtMoney(total)+'</b> ('+fmtMoney(totalPer)+' × '+count+')';var ppb=$("promoPayBtn");if(ppb)ppb.classList.remove("hidden");window._promoTotal=total;return}
+  if(promocalc){var count=Number(($("promoCount")||{}).value)||0;var text=(($("promoText")||{}).value||"").trim();if(count<100){toast("\u041C\u0438\u043D. 100 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439");return}if(!text){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442");return}var base=0.05;var extra=Math.max(0,text.length-50)*0.003;var totalPer=base+extra;var total=Math.round(totalPer*count*100)/100;var pc=$("promoCost");if(pc)pc.innerHTML='\uD83D\uDCB0 <b>\u0418\u0442\u043E\u0433\u043E: '+fmtMoney(total)+'</b> ('+fmtMoney(totalPer)+' \u00D7 '+count+')';var ppb=$("promoPayBtn");if(ppb)ppb.classList.remove("hidden");window._promoTotal=total;return}
 
   var promopay=tgt.closest("[data-action='promopay']");
   if(promopay){var count=Number(($("promoCount")||{}).value)||0;var text=(($("promoText")||{}).value||"").trim();var total=window._promoTotal||0;(async function(){loader(true);try{var r=await api("requestWithdraw",{amount:total,method:"promo",details:JSON.stringify({count:count,text:text})});if(r.ok){toast("\u2705 \u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0440\u0430\u0441\u0441\u044B\u043B\u043A\u0443 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0430!");haptic("ok")}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();return}
@@ -982,9 +948,9 @@ document.addEventListener("click",function(e){
 var sheetBackdrop=$("sheetBackdrop");if(sheetBackdrop)sheetBackdrop.addEventListener("click",closeSheet);
 var promoBackdrop=$("promoBackdrop");if(promoBackdrop)promoBackdrop.addEventListener("click",closePromoModal);
 var btnRefCopy=$("btnRefCopy");if(btnRefCopy)btnRefCopy.addEventListener("click",function(){var rl=$("refLink");var link=rl?rl.textContent:"";if(navigator.clipboard)navigator.clipboard.writeText(link);toast("\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u043E!");haptic("ok")});
-var btnDeposit=$("btnDeposit");if(btnDeposit)btnDeposit.addEventListener("click",async function(){var amount=Number(($("depAmount")||{}).value)||0;if(amount<10){toast("\u041C\u0438\u043D\u0438\u043C\u0443\u043C 10 \u20BD");haptic("err");return}haptic();loader(true);try{var r=await api("createDeposit",{amount:amount,method:"crypto"});if(r.ok&&r.payUrl){window.open(r.payUrl,"_blank");toast("\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0434\u043B\u044F \u043E\u043F\u043B\u0430\u0442\u044B")}else if(r.ok&&r.credited){toast("\u2705 "+fmtMoney(amount)+" \u0437\u0430\u0447\u0438\u0441\u043B\u0435\u043D\u043E");await loadBalances()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
-var btnWithdraw=$("btnWithdraw");if(btnWithdraw)btnWithdraw.addEventListener("click",async function(){var amount=Number(($("wdAmount")||{}).value)||0;var details=(($("wdDetails")||{}).value||"").trim();if(amount<50){toast("\u041C\u0438\u043D\u0438\u043C\u0443\u043C 50 \u20BD");haptic("err");return}if(!details){toast("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B");haptic("err");return}haptic();loader(true);try{var r=await api("requestWithdraw",{amount:amount,method:"card",details:details});if(r.ok){toast("\u2705 \u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0430");haptic("ok");var wa=$("wdAmount");if(wa)wa.value="";var wd=$("wdDetails");if(wd)wd.value="";await loadBalances()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
-var btnConvert=$("btnConvert");if(btnConvert)btnConvert.addEventListener("click",async function(){var amount=Number(($("convAmount")||{}).value)||0;if(amount<1){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0443\u043C\u043C\u0443");haptic("err");return}haptic();loader(true);try{var r=await api("convertBalance",{amount:amount,from:"ref"});if(r.ok){toast("\u2705 \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E");haptic("ok");var ca=$("convAmount");if(ca)ca.value="";await loadBalances();await loadRef()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
+var btnDeposit=$("btnDeposit");if(btnDeposit)btnDeposit.addEventListener("click",async function(){var amount=Number(($("depAmount")||{}).value)||0;if(amount<10){toast("\u041C\u0438\u043D\u0438\u043C\u0443\u043C 10 \u20BD");haptic("err");return}haptic();loader(true);try{var r=await api("createDeposit",{amount:amount,method:"crypto"});if(r.ok&&r.payUrl){window.open(r.payUrl,"_blank");toast("\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u0441\u044B\u043B\u043A\u0443 \u0434\u043B\u044F \u043E\u043F\u043B\u0430\u0442\u044B")}else if(r.ok&&r.credited){toast("\u2705 "+fmtMoney(amount)+" \u0437\u0430\u0447\u0438\u0441\u043B\u0435\u043D\u043E");loadBalancesBg()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
+var btnWithdraw=$("btnWithdraw");if(btnWithdraw)btnWithdraw.addEventListener("click",async function(){var amount=Number(($("wdAmount")||{}).value)||0;var details=(($("wdDetails")||{}).value||"").trim();if(amount<50){toast("\u041C\u0438\u043D\u0438\u043C\u0443\u043C 50 \u20BD");haptic("err");return}if(!details){toast("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B");haptic("err");return}haptic();loader(true);try{var r=await api("requestWithdraw",{amount:amount,method:"card",details:details});if(r.ok){toast("\u2705 \u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0430");haptic("ok");var wa=$("wdAmount");if(wa)wa.value="";var wd=$("wdDetails");if(wd)wd.value="";loadBalancesBg()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
+var btnConvert=$("btnConvert");if(btnConvert)btnConvert.addEventListener("click",async function(){var amount=Number(($("convAmount")||{}).value)||0;if(amount<1){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0443\u043C\u043C\u0443");haptic("err");return}haptic();loader(true);try{var r=await api("convertBalance",{amount:amount,from:"ref"});if(r.ok){toast("\u2705 \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E");haptic("ok");var ca=$("convAmount");if(ca)ca.value="";loadBalancesBg();loadRef()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}});
 
 window._bmDelete=(async function(){var gid=state.manageGid;if(!gid)return;showConfirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u044D\u0442\u043E\u0433\u043E \u0431\u043E\u0442\u0430?",async function(){haptic("err");loader(true);try{var r=await api("deleteBot",{globalId:gid});if(r.ok){toast("\u0411\u043E\u0442 \u0443\u0434\u0430\u043B\u0451\u043D");nav("bots");refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})})();
 var btnBmDelete=$("btnBmDelete");if(btnBmDelete)btnBmDelete.addEventListener("click",window._bmDelete);
@@ -992,30 +958,76 @@ var btnBmDelete=$("btnBmDelete");if(btnBmDelete)btnBmDelete.addEventListener("cl
 window._bmTransfer=(async function(){var gid=state.manageGid;if(!gid)return;var newOwnerId=prompt("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F Telegram \u0434\u043B\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u0431\u043E\u0442\u0430:");if(!newOwnerId)return;loader(true);try{var r=await api("transferBot",{globalId:gid,newOwnerId:newOwnerId});if(r.ok){toast("\u2705 \u0411\u043E\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u043D!");nav("bots");refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})();
 var btnBmTransfer=$("btnBmTransfer");if(btnBmTransfer)btnBmTransfer.addEventListener("click",window._bmTransfer);
 
+window._earnTab=function(tab){
+  var tabs=document.querySelectorAll("#earnTabs button");
+  tabs.forEach(function(b){b.classList.toggle("active",b.dataset.etab===tab)});
+  var el;el=$("earnTabBalance");if(el)el.classList.toggle("hidden",tab!=="balance");
+  el=$("earnTabOps");if(el)el.classList.toggle("hidden",tab!=="ops");
+  el=$("earnTabTx");if(el)el.classList.toggle("hidden",tab!=="tx");
+  el=$("earnTabRef");if(el)el.classList.toggle("hidden",tab!=="ref");
+  if(tab==="tx")loadTx();
+  if(tab==="ref")loadRef();
+};
+document.querySelectorAll("#earnTabs button").forEach(function(btn){btn.addEventListener("click",function(){haptic();window._earnTab(btn.dataset.etab)})});
+
+function refreshHome(){
+  var el=$("statBots");if(el)el.textContent=state.bots.length;
+  Promise.all([api("getProfile",{},true),api("getBots",{},true)]).then(function(results){
+    var r=results[0],b=results[1];
+    if(r.ok){state.user=r.profile;cacheSet("profile",r.profile);renderProfile()}
+    if(b.ok){state.bots=b.bots||[];cacheSet("bots",state.bots);var el2=$("statBots");if(el2)el2.textContent=state.bots.length;if(b.totalEarned!==undefined){var el3=$("statEarned");if(el3)el3.textContent=fmtMoney(b.totalEarned)}}
+  }).catch(function(){});
+}
+
+function loadBots(){
+  var wrap=$("botsList");if(!wrap)return;
+  renderBots();
+  api("getBots",{},true).then(function(r){
+    if(r.ok){state.bots=r.bots||[];cacheSet("bots",state.bots);renderBots()}
+  }).catch(function(){});
+}
+
 function boot(){
   state.templates=DEFAULT_TEMPLATES.slice();
   var cachedProfile=cacheGet("profile");
   var cachedBots=cacheGet("bots");
-  if(cachedProfile){state.user=cachedProfile;renderProfile()}
-  if(cachedBots){state.bots=cachedBots;var el=$("statBots");if(el)el.textContent=cachedBots.length}
+  var cachedBalances=cacheGet("balances");
+  if(cachedProfile)state.user=cachedProfile;
+  if(cachedBots)state.bots=cachedBots;
+  if(cachedBalances)state.balances=cachedBalances;
+
+  if(cachedProfile&&cachedProfile.agreedToRules){
+    var sh=$("shell");if(sh)sh.classList.remove("hidden");
+    renderProfile();if(cachedBots){var el=$("statBots");if(el)el.textContent=cachedBots.length}
+    nav("home");
+  }
 
   var ctrl=new AbortController();
   setTimeout(function(){ctrl.abort()},15000);
   fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData:tg?tg.initData:"",action:"getProfile"}),signal:ctrl.signal}).then(function(r){return r.json()}).then(function(r){
-    if(r.ok&&r.profile){state.user=r.profile;cacheSet("profile",r.profile);renderProfile();if(r.profile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");var g=$("view-gate");if(g)g.classList.add("hidden");nav("home")}else{var g=$("view-gate");if(g)g.classList.remove("hidden")}}
-    else{var g=$("view-gate");if(g)g.classList.remove("hidden")}
+    if(r.ok&&r.profile){
+      state.user=r.profile;cacheSet("profile",r.profile);renderProfile();
+      if(r.profile.agreedToRules){
+        var sh=$("shell");if(sh)sh.classList.remove("hidden");
+        var g=$("view-gate");if(g)g.classList.add("hidden");
+        if(!cachedProfile||!cachedProfile.agreedToRules)nav("home");
+      }else{
+        var g=$("view-gate");if(g)g.classList.remove("hidden");
+      }
+    }else{
+      if(!cachedProfile||!cachedProfile.agreedToRules){var g=$("view-gate");if(g)g.classList.remove("hidden")}
+    }
+    if(cachedBots){var el=$("statBots");if(el)el.textContent=state.bots.length}
   }).catch(function(){
-    if(cachedProfile&&cachedProfile.agreedToRules){var sh=$("shell");if(sh)sh.classList.remove("hidden");var g=$("view-gate");if(g)g.classList.add("hidden");nav("home")}
-    else{var g=$("view-gate");if(g)g.classList.remove("hidden")}
+    if(!cachedProfile||!cachedProfile.agreedToRules){var g=$("view-gate");if(g)g.classList.remove("hidden")}
   });
 
   loadTemplates().catch(function(){});
 
   var btn=$("btnAcceptRules");if(btn)btn.onclick=function(){
-    loader(true);
     var gate=$("view-gate");if(gate)gate.classList.add("hidden");
     var sh=$("shell");if(sh)sh.classList.remove("hidden");
-    nav("home");loader(false);
+    nav("home");
     api("acceptRules").then(function(rr){
       if(rr.ok&&state.user){state.user.agreedToRules=true;cacheSet("profile",state.user)}
       if(!rr.ok)toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")
