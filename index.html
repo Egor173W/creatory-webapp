@@ -159,6 +159,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 .splash-bar-wrap{width:180px;height:3px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:32px;animation:splashFadeUp 0.7s 0.7s cubic-bezier(0.16,1,0.3,1) both}
 .splash-bar{height:100%;width:0%;background:var(--gold-grad);border-radius:999px;transition:width 0.25s ease}
 .splash-pct{font-size:11px;color:var(--muted);font-weight:700;margin-top:10px;font-variant-numeric:tabular-nums;animation:splashFadeUp 0.7s 0.9s cubic-bezier(0.16,1,0.3,1) both}
+.splash-status{font-size:11px;color:var(--muted);margin-top:6px;animation:splashFadeUp 0.7s 1s cubic-bezier(0.16,1,0.3,1) both}
 .splash-dots{display:flex;gap:5px;margin-top:16px;animation:splashFadeUp 0.7s 1s cubic-bezier(0.16,1,0.3,1) both}
 .splash-dot{width:6px;height:6px;border-radius:50%;background:rgba(232,193,90,0.3);animation:splashDot 1.2s ease-in-out infinite}
 .splash-dot:nth-child(2){animation-delay:0.2s}
@@ -202,7 +203,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Manrope",-apple-sy
 </style>
 </head>
 <body>
-<div id="splash" class="splash" style="display:none"></div>
+<div id="splash" class="splash"><div class="splash-particles" id="splashParticles"></div><div class="splash-orb">BF</div><div class="splash-ring"></div><div class="splash-name">BotFactory</div><div class="splash-sub">Premium Bot Factory</div><div class="splash-bar-wrap"><div class="splash-bar" id="splashBar"></div></div><div class="splash-pct" id="splashPct">0%</div><div class="splash-status" id="splashStatus"></div><div class="splash-dots"><div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div></div></div>
 <div id="app">
 
   <section id="view-gate" class="view gate">
@@ -527,15 +528,20 @@ function cacheSet(k,v){try{localStorage.setItem("bf_"+k,JSON.stringify(v))}catch
 async function api(action,payload,silent){
   payload=payload||{};silent=!!silent;
   var initData=tg?tg.initData:"";
-  try{
-    var ctrl=new AbortController();
-    var tm=setTimeout(function(){ctrl.abort()},15000);
-    var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
-    clearTimeout(tm);
-    if(!r.ok)return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status};
-    return await r.json()
-  }catch(e){
-    return{ok:false,error:e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442":(e.message||"\u0421\u0435\u0442\u044C")}
+  for(var a=0;a<=1;a++){
+    try{
+      var ctrl=new AbortController();
+      var tm=setTimeout(function(){ctrl.abort()},12000);
+      var r=await fetch(window.WORKER_URL.replace(/\/+$/,"")+"/webapp_api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({initData:initData,action:action},payload)),signal:ctrl.signal});
+      clearTimeout(tm);
+      if(!r.ok){if(a<1){await delay(800);continue}return{ok:false,error:"\u0421\u0435\u0440\u0432\u0435\u0440 \u0432\u0435\u0440\u043D\u0443\u043B "+r.status}}
+      return await r.json()
+    }catch(e){
+      if(a<1){await delay(800);continue}
+      var msg=e.name==="AbortError"?"\u0422\u0430\u0439\u043C\u0430\u0443\u0442":(e.message||"\u0421\u0435\u0442\u044C");
+      if(!silent)toast(msg);
+      return{ok:false,error:msg}
+    }
   }
 }
 
@@ -595,6 +601,9 @@ async function applyOp(gid){haptic();loader(true);try{var r=await api("applyExtr
 async function onDeleteBot(){var bot=state.currentBot;if(!bot)return;showConfirm("\u0423\u0434\u0430\u043B\u0438\u0442\u044C @"+(bot.username||"")+"?",async function(){haptic("err");loader(true);try{var r=await api("deleteBot",{globalId:bot.globalId});if(r.ok){toast("\u0411\u043E\u0442 \u0443\u0434\u0430\u043B\u0451\u043D");closeSheet();loadBots();refreshHome()}else toast(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}})}
 
 function closeSheet(){var bd=$("sheetBackdrop");if(bd)bd.classList.add("hidden");var bs=$("botSheet");if(bs)bs.classList.add("hidden");state.currentBot=null}
+
+function showPullIndicator(){var i=$("pullInd");if(!i){i=document.createElement("div");i.id="pullInd";i.className="pull-indicator hidden";i.innerHTML='<span class="spin">\u27F3</span> \u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435\u2026';document.body.appendChild(i)}i.classList.remove("hidden")}
+function hidePullIndicator(){var i=$("pullInd");if(i)i.classList.add("hidden")}
 
 function nav(view){
   haptic();
@@ -671,14 +680,15 @@ function isTemplateType(){return state.wizCategory==="template"}
 
 function renderWizTypes(){
   var grid=$("typeGrid");if(!grid)return;
+  var prices=state.tplPrices||{};
   var filtered=state.templates.filter(function(t){return t.category===state.wizCategory});
   var sorted=filtered.slice().sort(function(a,b){return(a.priority||99)-(b.priority||99)});
-  grid.innerHTML=sorted.map(function(t){return '<button class="glass type-card'+(t.priority<=2?" priority":"")+'" data-type="'+t.id+'"><span class="type-icon">'+t.icon+'</span><span>'+esc(t.label)+'</span>'+(t.free?'<span class="type-free">\u0411\u0415\u0421\u041F\u041B\u0410\u0422\u041D\u041E</span>':"")+'</button>'}).join("");
+  grid.innerHTML=sorted.map(function(t){var p=prices[t.id];var priceText=p?"\uD83D\uDCB0 "+p.price+"\u20BD":"";return '<button class="glass type-card'+(t.priority<=2?" priority":"")+'" data-type="'+t.id+'"><span class="type-icon">'+t.icon+'</span><span>'+esc(t.label)+'</span>'+(priceText?'<span class="type-free">'+priceText+'</span>':'')+'</button>'}).join("");
 }
 
 function renderWizStep2(){
   var isTmpl=isTemplateType();var step2=$("wizStep2");if(!step2)return;
-  if(isTmpl){step2.innerHTML='<label class="field-label">\u0422\u043E\u043A\u0435\u043D \u0431\u043E\u0442\u0430 \u043E\u0442 @BotFather</label><input class="field mono" id="wizToken" placeholder="123456789:AA..."><div class="hint">\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0431\u043E\u0442\u0430 \u0447\u0435\u0440\u0435\u0437 @BotFather \u0438 \u0432\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0442\u043E\u043A\u0435\u043D</div>'}
+  if(isTmpl){var prices=state.tplPrices||{};var p=prices[state.wiz.type]||{};var bal=state.user&&state.user.balance||0;var cost=p.price||0;var balOk=bal>=cost;step2.innerHTML='<div class="glass card" style="padding:14px 16px;margin-bottom:12px"><div class="int-row"><span>\uD83D\uDCB0 \u0426\u0435\u043D\u0430</span><b>'+fmtMoney(cost)+' \u20BD</b></div><div class="int-row"><span>\uD83D\uDCB3 \u0412\u0430\u0448 \u0431\u0430\u043B\u0430\u043D\u0441</span><b>'+fmtMoney(bal)+' \u20BD</b></div>'+(balOk?'':'<div class="hint" style="color:#e74c3c;margin-top:8px">\u274C \u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0441\u0440\u0435\u0434\u0441\u0442\u0432</div>')+'</div><label class="field-label">\u0422\u043E\u043A\u0435\u043D \u0431\u043E\u0442\u0430 \u043E\u0442 @BotFather</label><input class="field mono" id="wizToken" placeholder="123456789:AA..."><div class="hint">\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0431\u043E\u0442\u0430 \u0447\u0435\u0440\u0435\u0437 @BotFather \u0438 \u0432\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0442\u043E\u043A\u0435\u043D</div>'}
   else{step2.innerHTML='<label class="field-label">\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u0430</label><input class="field" id="wizTitle" placeholder="\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: InvestPro Bot" maxlength="64"><label class="field-label">\u0422\u0435\u0445\u043D\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435</label><textarea class="field field-area" id="wizTz" placeholder="\u041E\u043F\u0438\u0448\u0438\u0442\u0435 \u0447\u0442\u043E \u0434\u043E\u043B\u0436\u0435\u043D \u0434\u0435\u043B\u0430\u0442\u044C \u043F\u0440\u043E\u0435\u043A\u0442: \u0444\u0443\u043D\u043A\u0446\u0438\u0438, \u043B\u043E\u0433\u0438\u043A\u0430, \u0438\u043D\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u0438..."></textarea>'}
 }
 
@@ -691,7 +701,7 @@ function renderWizStep3(){
 function renderWizStep4(){
   var isTmpl=isTemplateType();var step4=$("wizStep4");if(!step4)return;
   if(isTmpl){step4.innerHTML='<div id="wizDone" class="done-wrap"><div class="done-icon">\u2705</div><div class="done-title" id="doneTitle">\u0411\u043E\u0442 \u0441\u043E\u0437\u0434\u0430\u043D!</div><div class="done-link mono" id="doneLink"></div><div style="margin-top:16px"><a class="btn btn-gold btn-lg" id="btnOpenMyBots" href="https://t.me/mybots" target="_blank" style="text-decoration:none">\uD83E\uDD16 \u041D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u0432 \u041C\u043E\u0438 \u0431\u043E\u0442\u044B</a></div></div>'}
-  else{step4.innerHTML='<div id="wizRegWrap"><label class="field-label">\u0422\u043E\u043A\u0435\u043D \u0431\u043E\u0442\u0430 \u043E\u0442 @BotFather</label><input class="field mono" id="wizToken" placeholder="123456789:AA..."><div class="hint">site/game/miniapp/script \u0442\u043E\u043A\u0435\u043D \u043D\u0435 \u043D\u0443\u0436\u0435\u043D</div></div><div id="wizDone" class="hidden done-wrap"><div class="done-icon">\u2705</div><div class="done-title" id="doneTitle">\u041F\u0440\u043E\u0435\u043A\u0442 \u0441\u043E\u0437\u0434\u0430\u043D!</div><div class="done-link mono" id="doneLink"></div></div>'}
+  else{var bal=state.user&&state.user.balance||0;var cost=500;step4.innerHTML='<div class="glass card" style="padding:14px 16px;margin-bottom:12px"><div class="int-row"><span>\uD83D\uDCB0 \u0421\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C</span><b>'+fmtMoney(cost)+' \u20BD</b></div><div class="int-row"><span>\uD83D\uDCB3 \u0412\u0430\u0448 \u0431\u0430\u043B\u0430\u043D\u0441</span><b>'+fmtMoney(bal)+' \u20BD</b></div>'+(bal<cost?'<div class="hint" style="color:#e74c3c;margin-top:8px">\u274C \u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0441\u0440\u0435\u0434\u0441\u0442\u0432</div>':'')+'</div><div id="wizRegWrap"><label class="field-label">\u0422\u043E\u043A\u0435\u043D \u0431\u043E\u0442\u0430 \u043E\u0442 @BotFather</label><input class="field mono" id="wizToken" placeholder="123456789:AA..."><div class="hint">site/game/miniapp/script \u0442\u043E\u043A\u0435\u043D \u043D\u0435 \u043D\u0443\u0436\u0435\u043D</div></div><div id="wizDone" class="hidden done-wrap"><div class="done-icon">\u2705</div><div class="done-title" id="doneTitle">\u041F\u0440\u043E\u0435\u043A\u0442 \u0441\u043E\u0437\u0434\u0430\u043D!</div><div class="done-link mono" id="doneLink"></div></div>'}
 }
 
 function wizRender(){
@@ -729,13 +739,13 @@ $("wizNext").addEventListener("click",async function(){
   var w=state.wiz;haptic();var isTmpl=isTemplateType();
   if(isTmpl){
     if(w.step===1){if(!w.type){toast("\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0448\u0430\u0431\u043B\u043E\u043D");return}w.step=2;wizRender();return}
-    if(w.step===2){var token=$("wizToken").value.trim();if(!token.includes(":")){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u043E\u043A\u0435\u043D \u043E\u0442 @BotFather");haptic("err");return}w.token=token;loader(true);var wn=$("wizNext");wn.disabled=true;try{var r=await api("registerCustom",{token:token,origin:location.origin,draft:{customType:w.type,customTitle:w.type,blueprint:null,blueprintOk:true}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.registered=r;haptic("ok");wizRender();toast("\uD83C\uDF89 \u0411\u043E\u0442 \u0441\u043E\u0437\u0434\u0430\u043D!")}catch(e){haptic("err");toast(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}return}
+    if(w.step===2){var token=$("wizToken").value.trim();if(!token.includes(":")){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u043E\u043A\u0435\u043D \u043E\u0442 @BotFather");haptic("err");return}var prices=state.tplPrices||{};var p=prices[w.type]||{};var cost=p.price||500;var bal=state.user&&state.user.balance||0;if(bal<cost){toast("\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0441\u0440\u0435\u0434\u0441\u0442\u0432! \u041D\u0443\u0436\u043D\u043E "+cost+"\u20BD");haptic("err");return}w.token=token;loader(true);var wn=$("wizNext");wn.disabled=true;try{var r=await api("registerCustom",{token:token,origin:location.origin,template:w.type,draft:{customType:w.type,customTitle:w.type,blueprint:null,blueprintOk:true}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.registered=r;haptic("ok");wizRender();toast("\uD83C\uDF89 \u0411\u043E\u0442 \u0441\u043E\u0437\u0434\u0430\u043D!")}catch(e){haptic("err");toast(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}return}
   }
   if(!isTmpl){
     if(w.step===1){w.step=2;renderWizStep2();wizRender();return}
     if(w.step===2){w.title=$("wizTitle").value.trim();w.tz=$("wizTz").value.trim();if(!w.title||!w.tz){toast("\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0438 \u0422\u0417");haptic("err");return}api("saveCustomDraft",{draft:{customType:w.type,customTitle:w.title,tz:w.tz}},true);w.step=3;renderWizStep3();wizRender();return}
     if(w.step===3){var gs=$("wizGenStatus");var bp=$("wizBlueprint");if(gs)gs.textContent="\uD83E\uDDE0 \u0418\u0418 \u043F\u0440\u043E\u0435\u043A\u0442\u0438\u0440\u0443\u0435\u0442 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u2026";if(bp)bp.classList.add("hidden");var wn=$("wizNext");wn.disabled=true;loader(true);try{var r=await api("generateBlueprint",{draft:{customType:w.type,customTitle:w.title,tz:w.tz}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.blueprint=r.blueprint;haptic("ok");if(gs)gs.textContent="\u2705 \u041F\u0440\u043E\u0435\u043A\u0442 \u0441\u043F\u0440\u043E\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D:";if(bp){bp.classList.remove("hidden");bp.textContent=JSON.stringify(r.blueprint,null,2).slice(0,3500)}wn.disabled=false}catch(e){haptic("err");if(gs)gs.textContent="\u274C "+(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}return}
-    if(w.step===4){var skip=NON_BOT_TYPES.includes(w.type);var tokenEl=$("wizToken");var token=tokenEl?tokenEl.value.trim():"";if(!skip&&!token.includes(":")){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u043E\u043A\u0435\u043D \u043E\u0442 @BotFather");haptic("err");return}loader(true);var wn=$("wizNext");wn.disabled=true;try{var r=await api("registerCustom",{token:skip?"":token,origin:location.origin,draft:{customType:w.type,customTitle:w.title,tz:w.tz,blueprint:w.blueprint,blueprintOk:true}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.registered=r;haptic("ok");wizRender();toast("\uD83C\uDF89 \u041F\u0440\u043E\u0435\u043A\u0442 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D!");}catch(e){haptic("err");toast(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}}
+    if(w.step===4){var skip=NON_BOT_TYPES.includes(w.type);var tokenEl=$("wizToken");var token=tokenEl?tokenEl.value.trim():"";if(!skip&&!token.includes(":")){toast("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u043E\u043A\u0435\u043D \u043E\u0442 @BotFather");haptic("err");return}var prices=state.tplPrices||{};var p=prices.custom||{};var cost=p.price||500;var bal=state.user&&state.user.balance||0;if(bal<cost){toast("\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0441\u0440\u0435\u0434\u0441\u0442\u0432! \u041D\u0443\u0436\u043D\u043E "+cost+"\u20BD");haptic("err");return}loader(true);var wn=$("wizNext");wn.disabled=true;try{var r=await api("registerCustom",{token:skip?"":token,origin:location.origin,template:"custom",draft:{customType:w.type,customTitle:w.title,tz:w.tz,blueprint:w.blueprint,blueprintOk:true}});if(!r.ok)throw new Error(r.error||"\u041E\u0448\u0438\u0431\u043A\u0430");w.registered=r;haptic("ok");wizRender();toast("\uD83C\uDF89 \u041F\u0440\u043E\u0435\u043A\u0442 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D!");}catch(e){haptic("err");toast(e.message||"\u041E\u0448\u0438\u0431\u043A\u0430");wn.disabled=false}finally{loader(false)}}
   }
 });
 
@@ -744,6 +754,7 @@ $("btnHeroCreate").addEventListener("click",async function(){
   state.wizCategory="ai";
   var wn=$("wizNext");if(wn)wn.classList.remove("hidden");
   document.querySelectorAll("[data-wcat]").forEach(function(b){b.className=b.dataset.wcat==="ai"?"btn btn-gold btn-sm":"btn btn-ghost btn-sm"});
+  try{var pr=await api("getTemplatePrices",{},true);if(pr&&pr.ok)state.tplPrices=pr.prices}catch(e){}
   try{var r=await api("getCustomDraft",{},true);if(r&&r.ok&&r.draft){var d=r.draft;if(d.customType){state.wiz.type=d.customType}}}catch(e){}
   wizRender();nav("ai")
 });
@@ -1018,7 +1029,12 @@ async function loadTemplates(){
   try{var r=await api("getTemplateInfo",{},true);if(r.ok&&r.templates){state.templates=r.templates}else{state.templates=DEFAULT_TEMPLATES.slice()}}catch(e){state.templates=DEFAULT_TEMPLATES.slice()}
 }
 
-function boot(){
+async function boot(){
+  var splashEl=$("splash");var bar=$("splashBar");var pctEl=$("splashPct");var statusEl=$("splashStatus");
+  if(splashEl)splashEl.classList.remove("hidden");
+  var pct=0;var pctTimer=setInterval(function(){if(pct<90){pct+=Math.random()*12+3;if(pct>90)pct=90;if(bar)bar.style.width=pct+"%";if(pctEl)pctEl.textContent=Math.round(pct)+"%"}},200);
+  if(statusEl)statusEl.textContent="\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A \u0441\u0435\u0440\u0432\u0435\u0440\u0443\u2026";
+
   state.templates=DEFAULT_TEMPLATES.slice();
   var cachedProfile=cacheGet("profile");
   var cachedBots=cacheGet("bots");
@@ -1038,45 +1054,39 @@ function boot(){
     }
   }
 
-  if(cachedProfile&&cachedProfile.agreedToRules){
-    $("shell").classList.remove("hidden");
-    $("view-gate").classList.add("hidden");
-    renderProfile();
-    var el=$("statBots");if(el)el.textContent=state.bots.length;
-    try{nav("home")}catch(e){}
-  }else{
-    $("view-gate").classList.remove("hidden");
-  }
-
-  api("getProfile",{},true).then(function(r){
+  if(statusEl)statusEl.textContent="\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0434\u0430\u043D\u043D\u044B\u0445\u2026";
+  try{
+    await loadTemplates();
+    var r=await api("getProfile",{},true);
     if(r.ok&&r.profile){
       state.user=r.profile;cacheSet("profile",r.profile);renderProfile();
       if(r.profile.agreedToRules){
-        $("shell").classList.remove("hidden");
-        $("view-gate").classList.add("hidden");
-        try{nav("home")}catch(e){}
+        $("shell").classList.remove("hidden");$("view-gate").classList.add("hidden");nav("home")
+      }else{
+        $("view-gate").classList.remove("hidden");
+        var btn=$("btnAcceptRules");if(btn)btn.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){$("view-gate").classList.add("hidden");$("shell").classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}
       }
+    }else{
+      $("view-gate").classList.remove("hidden");
+      var btn2=$("btnAcceptRules");if(btn2)btn2.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){$("view-gate").classList.add("hidden");$("shell").classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}
     }
-  }).catch(function(){});
+  }catch(e){
+    $("view-gate").classList.remove("hidden");
+    var btn3=$("btnAcceptRules");if(btn3)btn3.onclick=async function(){loader(true);try{var rr=await api("acceptRules");if(rr.ok){$("view-gate").classList.add("hidden");$("shell").classList.remove("hidden");nav("home")}else toast(rr.error||"\u041E\u0448\u0438\u0431\u043A\u0430")}finally{loader(false)}}
+  }
 
   api("getBots",{},true).then(function(r){
     if(r.ok){state.bots=r.bots||[];cacheSet("bots",state.bots);var el=$("statBots");if(el)el.textContent=state.bots.length}
   }).catch(function(){});
 
-  loadTemplates().catch(function(){});
-
-  $("btnAcceptRules").onclick=function(){
-    if(!state.user){var tgU=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;if(tgU)state.user={userId:String(tgU.id),firstName:tgU.first_name||"",lastName:tgU.last_name||"",username:tgU.username||"",balance:0,totalEarned:0,botCount:0,agreedToRules:true};else state.user={userId:"",firstName:"",balance:0,totalEarned:0,botCount:0,agreedToRules:true}}
-    $("view-gate").classList.add("hidden");
-    $("shell").classList.remove("hidden");
-    renderProfile();
-    var el=$("statBots");if(el)el.textContent=state.bots.length;
-    try{nav("home")}catch(e){}
-    api("acceptRules",{},true).then(function(r){
-      if(r.ok&&state.user){state.user.agreedToRules=true;cacheSet("profile",state.user)}
-    }).catch(function(){});
-  };
+  clearInterval(pctTimer);pct=100;if(bar)bar.style.width="100%";if(pctEl)pctEl.textContent="100%";
+  setTimeout(function(){var s=$("splash");if(s)s.classList.add("out")},400);
+  setTimeout(function(){var s=$("splash");if(s)s.remove()},1000);
 }
+
+window.nav=nav;
+window.openPromoModal=openPromoModal;
+window.closePromoModal=closePromoModal;
 
 boot();
 })();
